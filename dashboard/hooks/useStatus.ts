@@ -23,8 +23,11 @@ export function useStatus() {
 
     if (!error && data) {
       setNodes(data)
+      setLoading(false)
+      return data
     }
     setLoading(false)
+    return []
   }
 
   useEffect(() => {
