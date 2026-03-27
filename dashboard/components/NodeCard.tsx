@@ -1,7 +1,7 @@
 import { NodeStatus } from "@/hooks/useStatus";
 import { Cpu, HardDrive, Clock, Activity, Wifi, Database } from "lucide-react";
 
-export function NodeCard({ node }: { node: any }) {
+export function NodeCard({ node }: { node: NodeStatus }) {
   const lastSeenDate = new Date(node.last_seen);
   const isOnline = Date.now() - lastSeenDate.getTime() < 10 * 60 * 1000;
   const isDiskCritical = (node.disk_usage_percent || 0) > 90;

@@ -7,6 +7,8 @@ export interface NodeStatus {
   ram_usage: number
   git_commits_24h: number
   last_seen: string
+  latency_ms?: number
+  disk_usage_percent?: number
 }
 
 export function useStatus() {
