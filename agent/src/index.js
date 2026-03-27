@@ -5,10 +5,9 @@ require('dotenv').config();
 
 const config = {
     nodeName: process.env.COMPUTER_NAME || require('os').hostname(),
-    projectsPath: process.env.PROJECTS_PATH || './',
     supabaseUrl: process.env.SUPABASE_URL,
     supabaseKey: process.env.SUPABASE_KEY,
-    interval: parseInt(process.env.HEARTBEAT_INTERVAL) || 120000
+    interval: parseInt(process.env.HEARTBEAT_INTERVAL) || 300000 // 5 min standard
 };
 
 if (!config.supabaseUrl || !config.supabaseKey) {
@@ -18,7 +17,6 @@ if (!config.supabaseUrl || !config.supabaseKey) {
 
 const supabase = createClient(config.supabaseUrl, config.supabaseKey);
 
-// Dynamic Plugin System
 const collectors = [];
 const collectorsPath = path.join(__dirname, 'collectors');
 
@@ -37,27 +35,26 @@ async function sendHeartbeat() {
             last_seen: new Date().toISOString()
         };
 
-        // Run all collectors in parallel
         const results = await Promise.all(
             collectors.map(c => c.collect(config))
         );
 
-        // Merge results
         results.forEach(res => {
             stats = { ...stats, ...res };
         });
 
+        // Forced UPSERT to ensure heartbeat
         const { error } = await supabase
             .from('node_status')
             .upsert(stats, { onConflict: 'node_name' });
 
         if (error) throw error;
-        console.log(`[Pulse] ${config.nodeName} updated: ${JSON.stringify(stats)}`);
+        console.log(`[Pulse] ${config.nodeName} synced at ${new Date().toLocaleTimeString()}`);
     } catch (err) {
         console.error(`[Error] Heartbeat failed: ${err.message}`);
     }
 }
 
-console.log(`[TT-Pulse Agent] Monitoring: ${config.nodeName}`);
+console.log(`[TT-Pulse Agent] Monitoring: ${config.nodeName} every ${config.interval / 1000}s`);
 setInterval(sendHeartbeat, config.interval);
 sendHeartbeat();
