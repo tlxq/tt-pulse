@@ -1,7 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const path = require('path');
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const config = {
     nodeName: process.env.COMPUTER_NAME || require('os').hostname(),
@@ -42,6 +42,8 @@ async function sendHeartbeat() {
         results.forEach(res => {
             stats = { ...stats, ...res };
         });
+
+        console.log(`[Pulse] Sending to Supabase: ${JSON.stringify(stats)}`);
 
         // Forced UPSERT to ensure heartbeat
         const { error } = await supabase

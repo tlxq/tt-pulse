@@ -27,20 +27,26 @@ module.exports = {
                 res.on('end', () => {
                     try {
                         const events = JSON.parse(data);
-                        if (!Array.isArray(events)) throw new Error('Invalid response');
+                        if (!Array.isArray(events)) {
+                            console.error('[Git] API did not return an array');
+                            return resolve({ git_commits_24h: 0 });
+                        }
                         
                         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
                         let totalCommits = 0;
                         
-                        events
-                            .filter(e => e.type === 'PushEvent' && new Date(e.created_at) > twentyFourHoursAgo)
-                            .forEach(e => {
-                                totalCommits += e.payload.commits ? e.payload.commits.length : 0;
-                            });
+                        const pushEvents = events.filter(e => e.type === 'PushEvent' && new Date(e.created_at) > twentyFourHoursAgo);
+                        
+                        pushEvents.forEach(e => {
+                            // GitHub API can sometimes omit 'size' or 'commits' in the events list
+                            const count = e.payload.size || (e.payload.commits ? e.payload.commits.length : 1);
+                            totalCommits += count;
+                        });
 
+                        console.log(`[Git] Found ${pushEvents.length} PushEvents with total ${totalCommits} commits for ${username}`);
                         resolve({ git_commits_24h: totalCommits });
                     } catch (e) {
-                        console.error('[Git] Error parsing GitHub API response');
+                        console.error('[Git] Error parsing GitHub API response:', e.message);
                         resolve({ git_commits_24h: 0 });
                     }
                 });
