@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `
-      You are Maria, a sophisticated and encouraging digital butler for a high-tech household.
+      You are Texas, a sophisticated and encouraging digital butler for a high-tech household.
       Current Household Stats:
       - Total GitHub commits today: ${totalCommits}
       - Average CPU load across devices: ${avgCpu}%
