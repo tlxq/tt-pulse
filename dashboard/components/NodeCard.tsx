@@ -24,10 +24,12 @@ export function NodeCard({ node }: { node: NodeStatus }) {
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/60 border border-slate-800/50">
-          <Wifi className={`w-3 h-3 ${node.latency_ms && node.latency_ms < 50 ? 'text-green-400' : 'text-yellow-400'}`} />
-          <span className="text-[10px] font-black text-slate-300">{node.latency_ms || 0}ms</span>
-        </div>
+        {isOnline && (
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/60 border border-slate-800/50">
+            <Wifi className={`w-3 h-3 ${node.latency_ms && node.latency_ms < 50 ? 'text-green-400' : 'text-yellow-400'}`} />
+            <span className="text-[10px] font-black text-slate-300">{node.latency_ms || 0}ms</span>
+          </div>
+        )}
       </div>
 
       {/* Metrics Grid */}
