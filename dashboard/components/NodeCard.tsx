@@ -125,7 +125,7 @@ export function NodeCard({ node }: { node: NodeStatus }) {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {((node as any).top_processes || []).map((p: any, idx: number) => (
+                      {(node.top_processes || []).map((p, idx) => (
                         <TableRow key={idx} className="border-slate-800/50 hover:bg-slate-800/20 transition-colors">
                           <TableCell className="text-xs font-bold text-slate-300">{p.command}</TableCell>
                           <TableCell className="text-xs font-mono text-blue-400 text-right">{p.cpu}%</TableCell>

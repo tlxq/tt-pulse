@@ -7,6 +7,14 @@ export interface HistoryPoint {
   recorded_at: string
 }
 
+export interface ProcessInfo {
+  command: string
+  cpu: number
+  mem: number
+  user?: string
+  pid?: string
+}
+
 export interface NodeStatus {
   node_name: string
   cpu_usage: number
@@ -19,6 +27,8 @@ export interface NodeStatus {
   last_ai_insight?: string
   last_ai_timestamp?: string
   recent_commits?: string[]
+  top_processes?: ProcessInfo[]
+  pending_updates?: number
 }
 
 export function useStatus() {

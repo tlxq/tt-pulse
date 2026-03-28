@@ -43,7 +43,7 @@ export default function Dashboard() {
 
     // If we have a fresh cache and not forcing, don't show loading spinner
     const firstWithInsight = currentNodes.find(n => n.last_ai_insight);
-    if (!force && firstWithInsight) {
+    if (!force && firstWithInsight?.last_ai_insight) {
       setInsight(firstWithInsight.last_ai_insight);
       return;
     }
