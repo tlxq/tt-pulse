@@ -1,76 +1,149 @@
-import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
+// SRE Inställningar - Justerade för att maximera Free Tier-livslängd
+const CACHE_TTL_MINUTES = 60;
+const PRIMARY_MODEL = 'gemini-2.0-flash';
+
 export async function POST(req: Request) {
   const apiKey = process.env.GEMINI_API_KEY;
-  
+
   try {
-    const { nodes, forceRefresh } = await req.json();
-    if (!nodes || nodes.length === 0) {
-      return NextResponse.json({ insight: "Infrastructure silent. No telemetry nodes detected." });
+    const body = await req.json();
+    const { nodes, commits, forceRefresh } = body;
+
+    // 1. Snabb-validering
+    if (!nodes || !Array.isArray(nodes) || nodes.length === 0) {
+      return NextResponse.json({ insight: 'Infrastructure silent, sir.' });
     }
 
-    const onlineNodes = nodes.filter((n: any) => n.online);
-    const activeNode = onlineNodes[0] || nodes[0];
+    // 2. Data Alignment (Bantad payload för att spara tokens)
+    const mappedNodes = nodes.map((n: any) => ({
+      name: n.node_name || n.name || 'unknown',
+      cpu: n.cpu_usage ?? n.cpu ?? 0,
+      online: !!n.online,
+    }));
 
-    // 1. Smart Caching Layer (15-min TTL)
-    const cacheAge = activeNode.last_ai_timestamp 
-      ? (Date.now() - new Date(activeNode.last_ai_timestamp).getTime()) / (1000 * 60)
+    const onlineNodes = mappedNodes.filter((n: any) => n.online);
+    const activeNode = onlineNodes[0] || mappedNodes[0];
+
+    // 3. Aggressiv SRE Caching (Sparar Quota)
+    const { data: cachedData } = await supabase
+      .from('node_status')
+      .select('last_ai_insight, last_ai_timestamp')
+      .eq('node_name', activeNode.name)
+      .single();
+
+    const cacheAge = cachedData?.last_ai_timestamp
+      ? (Date.now() - new Date(cachedData.last_ai_timestamp).getTime()) /
+        (1000 * 60)
       : 999;
 
-    if (!forceRefresh && cacheAge < 15 && activeNode.last_ai_insight) {
-      return NextResponse.json({ insight: activeNode.last_ai_insight, cached: true });
+    if (
+      !forceRefresh &&
+      cacheAge < CACHE_TTL_MINUTES &&
+      cachedData?.last_ai_insight
+    ) {
+      console.log(
+        `[SRE] Cache Hit (${Math.round(cacheAge)}m old). Respecting Rate Limits.`,
+      );
+      return NextResponse.json({
+        insight: cachedData.last_ai_insight,
+        cached: true,
+      });
     }
 
-    // 2. Native REST Call to Gemini v1 (Stability First)
+    // 4. AI Dispatcher med Quota-Guard
     if (apiKey && onlineNodes.length > 0) {
-      const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-      
-      const prompt = {
-        contents: [{
-          parts: [{
-            text: `You are Texas, a Senior SRE for the TT-Pulse household. 
-            Analyze this telemetry: ${JSON.stringify(nodes.map((n: any) => ({ name: n.node_name, cpu: n.cpu_usage, disk: n.disk_usage_percent, online: n.online })))}.
-            Provide a 3-sentence 'Daily Standup' report. Identify the most critical node and issue a sarcastic but technical warning. 
-            Tone: Sophisticated British SRE.`
-          }]
-        }]
-      };
+      // Vi provar 2.0 först på den stabila v1-routen
+      const modelsToTry = [PRIMARY_MODEL, 'gemini-1.5-flash'];
 
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(prompt)
-      });
+      for (const modelName of modelsToTry) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${apiKey}`;
 
-      if (res.ok) {
-        const data = await res.json();
-        const insight = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "Telemetry nominal, sir.";
+          const payload = {
+            contents: [
+              {
+                parts: [
+                  {
+                    text: `SRE Standup. Nodes: ${JSON.stringify(mappedNodes)}. Recent: ${JSON.stringify((commits || []).slice(0, 3))}. 3 witty British sentences max.`,
+                  },
+                ],
+              },
+            ],
+            generationConfig: { maxOutputTokens: 150 }, // Håller nere kostnaden/tokens
+          };
 
-        // 3. Cache Persistence: Save back to node_status for sub-second future responses
-        await supabase
-          .from('node_status')
-          .update({ 
-            last_ai_insight: insight, 
-            last_ai_timestamp: new Date().toISOString() 
-          })
-          .in('node_name', onlineNodes.map((n: any) => n.node_name));
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
 
-        return NextResponse.json({ insight, cached: false });
+          if (res.status === 429) {
+            console.warn(
+              `[SRE] Rate Limit Exceeded (429) for ${modelName}. Tactical retreat to fallback.`,
+            );
+            break; // Sluta försöka om vi är spärrade
+          }
+
+          if (res.ok) {
+            const data = await res.json();
+            const insight =
+              data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+
+            if (insight) {
+              console.log(
+                `[SRE] Insight generated via ${modelName}. Updating node_status cache.`,
+              );
+
+              const nodeNames = onlineNodes.map((n) => n.name);
+              await supabase
+                .from('node_status')
+                .update({
+                  last_ai_insight: insight,
+                  last_ai_timestamp: new Date().toISOString(),
+                })
+                .in('node_name', nodeNames);
+
+              return NextResponse.json({
+                insight,
+                cached: false,
+                model: modelName,
+              });
+            }
+          }
+
+          console.log(
+            `[SRE] Model ${modelName} returned ${res.status}. Trying next...`,
+          );
+        } catch (e) {
+          console.error(`[SRE] Dispatch error for ${modelName}:`, e);
+        }
       }
     }
 
-    // 4. SRE Fallback Rule Engine (Deterministic Resilience)
-    const criticalNode = nodes.reduce((prev: any, curr: any) => (prev.cpu > curr.cpu) ? prev : curr);
-    const fallback = `[SRE FALLBACK] System load at ${activeNode.cpu}%. ${onlineNodes.length} nodes operational. ${criticalNode.name} identified as workhorse.`;
-    
-    return NextResponse.json({ insight: fallback, fallback: true });
+    // 5. Deterministic Fallback (Visas när Quota är slut)
+    const workhorse = mappedNodes.reduce((prev: any, curr: any) =>
+      prev.cpu > curr.cpu ? prev : curr,
+    );
 
-  } catch (error) {
-    console.error("Critical SRE Insight Failure:", error);
-    return NextResponse.json({ insight: "Infrastructure is humming, but analytical circuits are offline." });
+    const fallback = `[SRE FALLBACK] Systems nominal at ${activeNode.cpu}% load. The AI link is currently throttled by Google, but ${workhorse.name} is clearly doing the heavy lifting while I brew some digital tea.`;
+
+    return NextResponse.json({
+      insight: fallback,
+      fallback: true,
+      quotaExceeded: true,
+    });
+  } catch (error: any) {
+    console.error('CRITICAL_SRE_FAILURE:', error);
+    return NextResponse.json({
+      insight:
+        'Analytical circuits are offline. Systems remain operational, sir.',
+    });
   }
 }
