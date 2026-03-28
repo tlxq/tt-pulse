@@ -103,6 +103,7 @@ export async function POST(req: Request) {
       mascot: 'Bengal'
     });
   } catch (error) {
+    console.error('[API Error] Insights failed:', error);
     return NextResponse.json({
       insight: "My whiskers are tingling... something's not right with the studio data."
     });
