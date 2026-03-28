@@ -64,8 +64,8 @@ export async function POST(req: Request) {
     }
 
     // 4. SRE Fallback Rule Engine (Deterministic Resilience)
-    const criticalNode = nodes.reduce((prev: any, curr: any) => (prev.cpu_usage > curr.cpu_usage) ? prev : curr);
-    const fallback = `[SRE FALLBACK] System load at ${activeNode.cpu_usage}%. ${onlineNodes.length} nodes operational. ${criticalNode.node_name} identified as workhorse.`;
+    const criticalNode = nodes.reduce((prev: any, curr: any) => (prev.cpu > curr.cpu) ? prev : curr);
+    const fallback = `[SRE FALLBACK] System load at ${activeNode.cpu}%. ${onlineNodes.length} nodes operational. ${criticalNode.name} identified as workhorse.`;
     
     return NextResponse.json({ insight: fallback, fallback: true });
 
