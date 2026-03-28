@@ -38,54 +38,62 @@ export default function Dashboard() {
   }, []);
 
   const fetchAI = useCallback(
-    async (currentNodes = nodes) => {
-      if (currentNodes.length === 0) return;
-      setLoadingAI(true);
-      const stats = getStats(currentNodes);
+  async (currentNodes = nodes, force = false) => {
+    if (currentNodes.length === 0) return;
 
-      try {
-        const res = await fetch('/api/insights', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            totalCommits: stats.totalCommits,
-            avgCpu: stats.avgCpu,
-            efficiency: stats.efficiency,
-            nodes: currentNodes.map((n) => ({
-              name: n.node_name,
-              cpu: n.cpu_usage,
-              ram: n.ram_usage,
-              latency: n.latency_ms,
-              storage: n.disk_usage_percent,
-              online:
-                Date.now() - new Date(n.last_seen).getTime() < 10 * 60 * 1000,
-            })),
-          }),
-          cache: 'no-store',
-        });
-        const data = await res.json();
-        setInsight(data.insight);
-      } catch (e) {
-        setInsight(
-          "I'm sorry, I couldn't reach the global analysis center. Standing by.",
-        );
-      } finally {
-        setLoadingAI(false);
-      }
-    },
-    [nodes.length, getStats],
+    // If we have a fresh cache and not forcing, don't show loading spinner
+    const firstWithInsight = currentNodes.find(n => n.last_ai_insight);
+    if (!force && firstWithInsight) {
+      setInsight(firstWithInsight.last_ai_insight);
+      return;
+    }
+
+    setLoadingAI(true);
+    const stats = getStats(currentNodes);
+
+    try {
+      const res = await fetch('/api/insights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          totalCommits: stats.totalCommits,
+          avgCpu: stats.avgCpu,
+          efficiency: stats.efficiency,
+          forceRefresh: force,
+          nodes: currentNodes.map((n) => ({
+            name: n.node_name,
+            cpu: n.cpu_usage,
+            ram: n.ram_usage,
+            latency: n.latency_ms,
+            storage: n.disk_usage_percent,
+            recent_commits: n.recent_commits,
+            last_ai_insight: n.last_ai_insight,
+            last_ai_timestamp: n.last_ai_timestamp,
+            online:
+              Date.now() - new Date(n.last_seen).getTime() < 10 * 60 * 1000,
+          })),
+        }),
+        cache: 'no-store',
+      });
+      const data = await res.json();
+      setInsight(data.insight);
+    } catch (e) {
+      setInsight(
+        "The technical circuits are humming, but my analytical synthesis is momentarily offline, sir.",
+      );
+    } finally {
+      setLoadingAI(false);
+    }
+  },
+  [nodes.length, getStats],
   );
 
   const handleManualRefresh = async () => {
-    setIsRefreshing(true);
-    // 1. Trigger Supabase data refresh and wait for the result
-    const freshNodes = await refresh();
-    // 2. Pass the FRESH nodes directly to Texas
-    await fetchAI(freshNodes);
-    // 3. UX delay
-    setTimeout(() => setIsRefreshing(false), 500);
+  setIsRefreshing(true);
+  const freshNodes = await refresh();
+  await fetchAI(freshNodes, true);
+  setTimeout(() => setIsRefreshing(false), 500);
   };
-
   useEffect(() => {
     if (nodes.length > 0 && !insight && !loadingAI) {
       fetchAI();

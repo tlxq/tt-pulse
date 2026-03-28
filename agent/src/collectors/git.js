@@ -9,7 +9,7 @@ module.exports = {
 
             if (!username) {
                 console.warn('[Git] GITHUB_USERNAME missing in .env');
-                return resolve({ git_commits_24h: 0 });
+                return resolve({ git_commits_24h: 0, recent_commits: [] });
             }
 
             const options = {
@@ -29,30 +29,47 @@ module.exports = {
                         const events = JSON.parse(data);
                         if (!Array.isArray(events)) {
                             console.error('[Git] API did not return an array');
-                            return resolve({ git_commits_24h: 0 });
+                            return resolve({ git_commits_24h: 0, recent_commits: [] });
                         }
                         
                         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
                         let totalCommits = 0;
+                        const recentCommitMessages = [];
                         
-                        const pushEvents = events.filter(e => e.type === 'PushEvent' && new Date(e.created_at) > twentyFourHoursAgo);
+                        // Process events
+                        const pushEvents = events.filter(e => e.type === 'PushEvent');
                         
                         pushEvents.forEach(e => {
-                            // GitHub API can sometimes omit 'size' or 'commits' in the events list
+                            const isRecent = new Date(e.created_at) > twentyFourHoursAgo;
                             const count = e.payload.size || (e.payload.commits ? e.payload.commits.length : 1);
-                            totalCommits += count;
+                            
+                            if (isRecent) {
+                                totalCommits += count;
+                            }
+
+                            // Collect messages from payloads
+                            if (e.payload.commits && Array.isArray(e.payload.commits)) {
+                                e.payload.commits.forEach(c => {
+                                    if (recentCommitMessages.length < 5) {
+                                        recentCommitMessages.push(c.message);
+                                    }
+                                });
+                            }
                         });
 
-                        console.log(`[Git] Found ${pushEvents.length} PushEvents with total ${totalCommits} commits for ${username}`);
-                        resolve({ git_commits_24h: totalCommits });
+                        console.log(`[Git] Found ${totalCommits} commits and ${recentCommitMessages.length} recent messages for ${username}`);
+                        resolve({ 
+                            git_commits_24h: totalCommits,
+                            recent_commits: recentCommitMessages 
+                        });
                     } catch (e) {
                         console.error('[Git] Error parsing GitHub API response:', e.message);
-                        resolve({ git_commits_24h: 0 });
+                        resolve({ git_commits_24h: 0, recent_commits: [] });
                     }
                 });
             }).on('error', (err) => {
                 console.error('[Git] Network error:', err.message);
-                resolve({ git_commits_24h: 0 });
+                resolve({ git_commits_24h: 0, recent_commits: [] });
             });
         });
     }

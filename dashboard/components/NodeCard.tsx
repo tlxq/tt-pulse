@@ -1,101 +1,155 @@
+'use client';
 import { NodeStatus } from "@/hooks/useStatus";
-import { Cpu, HardDrive, Clock, Wifi, Database } from "lucide-react";
+import { Card, AreaChart, Title, Text, Badge, Flex, Grid, Metric, Table, TableHead, TableRow, TableHeaderCell, TableBody, TableCell } from "@tremor/react";
+import { Cpu, HardDrive, Wifi, Database, Info, Activity, X } from "lucide-react";
+import { useEffect, useState, Fragment } from "react";
+import { Dialog, Transition } from "@headlessui/react";
 
 export function NodeCard({ node }: { node: NodeStatus }) {
-  const lastSeenDate = new Date(node.last_seen);
-  const diffMinutes = Math.floor((Date.now() - lastSeenDate.getTime()) / 60000);
-  const isOnline = diffMinutes < 10;
+  const [isMounted, setIsMounted] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   
-  const timeDisplay = diffMinutes < 1 ? 'Just now' : `${diffMinutes}m ago`;
-  const isDiskCritical = (node.disk_usage_percent || 0) > 90;
+  useEffect(() => { setIsMounted(true); }, []);
+
+  const lastSeenDate = new Date(node.last_seen);
+  const isOnline = (Date.now() - lastSeenDate.getTime()) / 60000 < 10;
+  
+  const chartData = (node.history || []).map(h => ({
+    time: new Date(h.recorded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    "CPU Usage": h.cpu_usage,
+    "RAM Usage": h.ram_usage,
+  }));
 
   return (
-    <div className="bg-[#0f172a]/40 border border-slate-800/60 rounded-2xl p-5 backdrop-blur-md shadow-2xl hover:border-blue-500/30 transition-all duration-300 group">
-      {/* Header */}
-      <div className="flex justify-between items-start mb-6">
-        <div>
-          <h3 className="text-base font-bold text-slate-100 tracking-tight group-hover:text-blue-400 transition-colors">
-            {node.node_name}
-          </h3>
-          <div className="flex items-center gap-2 mt-1">
-            <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 'bg-red-500/50'}`} />
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-              {isOnline ? 'Active' : 'Offline'}
-            </span>
+    <Fragment>
+      <Card className="bg-[#0f172a]/60 border-slate-800 ring-0 shadow-2xl backdrop-blur-xl group transition-all hover:bg-[#0f172a]/80">
+        <Flex alignItems="start" className="mb-4">
+          <div className="space-y-1">
+            <Title className="text-white font-black tracking-tight">{node.node_name}</Title>
+            <Text className="text-slate-500 uppercase text-[9px] font-black tracking-[0.2em]">SRE Pulse Node</Text>
           </div>
-        </div>
-        {isOnline && (
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/60 border border-slate-800/50">
-            <Wifi className={`w-3 h-3 ${node.latency_ms && node.latency_ms < 50 ? 'text-green-400' : 'text-yellow-400'}`} />
-            <span className="text-[10px] font-black text-slate-300">{node.latency_ms || 0}ms</span>
-          </div>
-        )}
-      </div>
+          <Badge color={isOnline ? "emerald" : "rose"} className="font-black uppercase tracking-widest text-[8px] px-3 py-1 ring-0">
+            {isOnline ? "Active" : "Offline"}
+          </Badge>
+        </Flex>
 
-      {/* Metrics Grid */}
-      <div className="space-y-4">
-        {/* CPU */}
-        <div className="space-y-1.5">
-          <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-wider text-slate-500">
-            <div className="flex items-center gap-1.5">
-              <Cpu className="w-3 h-3" />
-              <span>Process Load</span>
-            </div>
-            <span className="text-slate-300">{node.cpu_usage}%</span>
-          </div>
-          <div className="w-full bg-slate-800/40 rounded-full h-1.5 overflow-hidden">
-            <div 
-              className="bg-gradient-to-r from-blue-600 to-blue-400 h-full transition-all duration-1000" 
-              style={{ width: `${node.cpu_usage}%` }}
+        <div className="h-44 w-full mt-6 -mx-2 relative">
+          {isMounted ? (
+            <AreaChart
+              className="h-full"
+              data={chartData}
+              index="time"
+              categories={["CPU Usage", "RAM Usage"]}
+              colors={["blue", "indigo"]}
+              showLegend={false}
+              showGridLines={false}
+              showXAxis={false}
+              showYAxis={false}
+              startEndOnly={true}
+              curveType="monotone"
             />
-          </div>
+          ) : (
+            <div className="h-full w-full bg-slate-900/20 rounded-xl animate-pulse flex items-center justify-center">
+               <Activity className="w-5 h-5 text-slate-800" />
+            </div>
+          )}
         </div>
 
-        {/* RAM */}
-        <div className="space-y-1.5">
-          <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-wider text-slate-500">
-            <div className="flex items-center gap-1.5">
+        <Grid numItems={3} className="mt-8 border-t border-slate-800/60 pt-6 gap-4">
+          <div className="space-y-1 group/cpu cursor-pointer" onClick={() => setIsOpen(true)}>
+            <Flex justifyContent="start" className="gap-2 text-slate-500">
+              <Cpu className="w-3 h-3 group-hover/cpu:text-blue-400 transition-colors" />
+              <Text className="text-[9px] font-black uppercase">CPU</Text>
+              <Info className="w-2.5 h-2.5 opacity-0 group-hover/cpu:opacity-100 transition-all text-blue-500" />
+            </Flex>
+            <Metric className="text-sm font-black text-slate-200">{node.cpu_usage}%</Metric>
+          </div>
+          <div className="space-y-1">
+            <Flex justifyContent="start" className="gap-2 text-slate-500">
               <HardDrive className="w-3 h-3" />
-              <span>Memory Usage</span>
-            </div>
-            <span className="text-slate-300">{node.ram_usage}%</span>
+              <Text className="text-[9px] font-black uppercase">RAM</Text>
+            </Flex>
+            <Metric className="text-sm font-black text-slate-200">{node.ram_usage}%</Metric>
           </div>
-          <div className="w-full bg-slate-800/40 rounded-full h-1.5 overflow-hidden">
-            <div 
-              className="bg-gradient-to-r from-indigo-600 to-purple-500 h-full transition-all duration-1000" 
-              style={{ width: `${node.ram_usage}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Storage */}
-        <div className="space-y-1.5">
-          <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-wider text-slate-500">
-            <div className="flex items-center gap-1.5">
+          <div className="space-y-1">
+            <Flex justifyContent="start" className="gap-2 text-slate-500">
               <Database className="w-3 h-3" />
-              <span>Storage</span>
-            </div>
-            <span className={isDiskCritical ? 'text-red-400' : 'text-slate-300'}>{node.disk_usage_percent || 0}%</span>
+              <Text className="text-[9px] font-black uppercase">Disk</Text>
+            </Flex>
+            <Metric className={`text-sm font-black ${(node.disk_usage_percent || 0) > 90 ? 'text-rose-500' : 'text-slate-200'}`}>
+              {node.disk_usage_percent || 0}%
+            </Metric>
           </div>
-          <div className="w-full bg-slate-800/40 rounded-full h-1.5 overflow-hidden">
-            <div 
-              className={`h-full transition-all duration-1000 ${isDiskCritical ? 'bg-red-500 animate-pulse' : 'bg-slate-500'}`} 
-              style={{ width: `${node.disk_usage_percent || 0}%` }}
-            />
-          </div>
-        </div>
-      </div>
+        </Grid>
 
-      {/* Footer */}
-      <div className="mt-6 pt-4 border-t border-slate-800/40 flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-slate-500">
-          <Clock className="w-3 h-3" />
-          <span className="text-[10px] font-bold uppercase tracking-widest italic italic-style">Status</span>
-        </div>
-        <span className={`text-[10px] font-black uppercase tracking-widest ${isOnline ? 'text-blue-400' : 'text-slate-600'}`}>
-          {isOnline ? timeDisplay : 'Offline'}
-        </span>
-      </div>
-    </div>
+        <Flex className="mt-6 border-t border-slate-800/30 pt-4 opacity-50">
+          <Flex justifyContent="start" className="gap-2 text-slate-500">
+            <Wifi className="w-3 h-3" />
+            <Text className="text-[9px] font-bold">{node.latency_ms || 0}ms</Text>
+          </Flex>
+          <Text className="text-[9px] font-black uppercase tracking-widest text-slate-600 italic">SRE Pulse Verified</Text>
+        </Flex>
+      </Card>
+
+      {/* Process Monitor Modal */}
+      <Transition appear show={isOpen} as={Fragment}>
+        <Dialog as="div" className="relative z-50" onClose={() => setIsOpen(false)}>
+          <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
+            <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 text-center">
+              <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100" leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
+                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-3xl bg-[#0f172a] border border-slate-800 p-8 text-left align-middle shadow-2xl transition-all">
+                  <Flex className="mb-6">
+                    <Dialog.Title as="h3" className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
+                      <Cpu className="w-5 h-5 text-blue-500" />
+                      Process Monitor
+                    </Dialog.Title>
+                    <button onClick={() => setIsOpen(false)} className="text-slate-500 hover:text-white transition-colors">
+                      <X className="w-5 h-5" />
+                    </button>
+                  </Flex>
+                  
+                  <Text className="text-slate-400 text-xs mb-6 font-bold tracking-wide">
+                    Live CPU consumption analysis for <span className="text-blue-400">{node.node_name}</span>.
+                  </Text>
+
+                  <Table className="mt-4">
+                    <TableHead>
+                      <TableRow className="border-slate-800">
+                        <TableHeaderCell className="text-[10px] font-black text-slate-600 uppercase">Process</TableHeaderCell>
+                        <TableHeaderCell className="text-[10px] font-black text-slate-600 uppercase text-right">CPU%</TableHeaderCell>
+                        <TableHeaderCell className="text-[10px] font-black text-slate-600 uppercase text-right">RAM%</TableHeaderCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {((node as any).top_processes || []).map((p: any, idx: number) => (
+                        <TableRow key={idx} className="border-slate-800/50 hover:bg-slate-800/20 transition-colors">
+                          <TableCell className="text-xs font-bold text-slate-300">{p.command}</TableCell>
+                          <TableCell className="text-xs font-mono text-blue-400 text-right">{p.cpu}%</TableCell>
+                          <TableCell className="text-xs font-mono text-indigo-400 text-right">{p.mem}%</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+
+                  <div className="mt-8 border-t border-slate-800/60 pt-6">
+                    <button
+                      type="button"
+                      className="w-full inline-flex justify-center rounded-xl bg-slate-900 border border-slate-800 px-4 py-3 text-xs font-black uppercase text-slate-400 hover:text-white hover:bg-slate-800 transition-all active:scale-95"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Acknowledge Report
+                    </button>
+                  </div>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
+    </Fragment>
   );
 }
