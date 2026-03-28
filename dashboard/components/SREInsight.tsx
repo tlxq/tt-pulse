@@ -1,7 +1,7 @@
 'use client';
 
-import { Sparkles, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { Text } from '@tremor/react';
+import { Zap, ShieldCheck } from 'lucide-react';
+import { BengalMascot } from './BengalMascot';
 
 interface SREInsightProps {
   insight: string;
@@ -11,50 +11,56 @@ interface SREInsightProps {
 }
 
 export function SREInsight({ insight, loading, fallback, quotaExceeded }: SREInsightProps) {
-  const isDegraded = fallback || quotaExceeded;
+  const isDegraded = fallback || quotaExceeded || (insight && (insight.includes('Mrow?') || insight.includes('gap in the perimeter') || insight.includes('Hiss!')));
+  const isHighLoad = insight && (insight.includes('Hiss!') || insight.includes('Grrr...'));
 
   return (
-    <div className={`bg-gradient-to-br ${isDegraded ? 'from-amber-900/20 to-[#0f172a]/40 border-amber-500/30' : 'from-[#1e293b]/60 to-[#0f172a]/40 border-blue-500/20'} border rounded-3xl p-8 relative overflow-hidden group shadow-[0_0_15px_rgba(59,130,246,0.05)] transition-all hover:shadow-[0_0_20px_rgba(59,130,246,0.1)]`}>
-      <div className="relative z-10 space-y-4 h-full flex flex-col justify-between">
-        <div className="flex items-center justify-between">
-          <div className={`flex items-center gap-3 ${isDegraded ? 'text-amber-400' : 'text-blue-400'} font-black uppercase tracking-[0.2em] text-[10px]`}>
-            <Sparkles className={`w-4 h-4 ${isDegraded ? 'animate-pulse' : ''}`} /> Texas - The Butler
+    <div className={`col-span-1 md:col-span-1 lg:col-span-1 bg-[#0f172a]/40 border ${isDegraded ? 'border-amber-500/30 shadow-[0_0_20px_rgba(245,158,11,0.1)]' : 'border-slate-800/60 shadow-[0_0_15px_rgba(245,158,11,0.05)]'} rounded-3xl p-8 relative overflow-hidden group transition-all`}>
+      {/* Background Studio Element */}
+      <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+        <ShieldCheck className="w-24 h-24 text-amber-500 rotate-12" />
+      </div>
+
+      <div className="relative z-10 h-full flex flex-col items-center text-center space-y-6">
+        <div className="w-full flex items-center justify-between mb-2">
+          <div className={`flex items-center gap-2 ${isDegraded ? 'text-amber-400' : 'text-amber-500'} font-black uppercase tracking-[0.2em] text-[10px]`}>
+            Texas - Studio Guardian
           </div>
           <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border ${isDegraded ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'} text-[8px] font-black uppercase tracking-widest`}>
-            {isDegraded ? (
-              <>
-                <AlertTriangle className="w-2.5 h-2.5" />
-                SRE STATUS: DEGRADED (RATE LIMITED)
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="w-2.5 h-2.5" />
-                SRE STATUS: OPERATIONAL
-              </>
-            )}
+            {isDegraded ? 'DEGRADED' : 'OPERATIONAL'}
           </div>
         </div>
 
-        <div className={`text-slate-300 text-sm font-medium leading-relaxed italic tracking-wide py-2 min-h-[60px] ${isDegraded ? 'text-amber-100/80 drop-shadow-[0_0_8px_rgba(245,158,11,0.2)]' : ''}`}>
-          {loading ? (
-            <div className="flex items-center gap-2">
-              <div className={`w-1.5 h-1.5 ${isDegraded ? 'bg-amber-500' : 'bg-blue-500'} rounded-full animate-bounce`} />
-              <div className={`w-1.5 h-1.5 ${isDegraded ? 'bg-amber-500' : 'bg-blue-500'} rounded-full animate-bounce [animation-delay:0.2s]`} />
-              <div className={`w-1.5 h-1.5 ${isDegraded ? 'bg-amber-500' : 'bg-blue-500'} rounded-full animate-bounce [animation-delay:0.4s]`} />
-            </div>
-          ) : (
-            `"${insight || 'Waiting for signal, sir.'}"`
-          )}
+        {/* The Large Mascot */}
+        <div className="py-2">
+          <BengalMascot isHighLoad={!!isHighLoad} isDegraded={!!isDegraded} />
         </div>
 
-        <div className="text-slate-600 text-[9px] font-black uppercase tracking-[0.3em] border-t border-slate-800/60 pt-4 mt-auto flex justify-between items-center">
-          <span>Autonomous Insight Engine</span>
-          {isDegraded && <span className="text-amber-600/50 italic animate-pulse">Retrying...</span>}
+        <div className="space-y-4 w-full">
+          <div className={`text-slate-200 text-base font-medium leading-relaxed italic px-2 min-h-[80px] flex items-center justify-center ${isDegraded ? 'text-amber-100/90' : ''}`}>
+            {loading ? (
+              <div className="flex items-center gap-2">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.2}s` }} />
+                ))}
+              </div>
+            ) : (
+              `"${insight || 'The studio is calm, Human.'}"`
+            )}
+          </div>
+
+          <div className="pt-4 border-t border-slate-800/40 w-full flex justify-between items-center">
+            <div className="flex items-center gap-2 text-slate-500">
+              <Zap className="w-3 h-3 text-amber-500/50" />
+              <span className="text-[9px] font-black uppercase tracking-widest">Dev Studio Oversight</span>
+            </div>
+            {isHighLoad && <span className="text-amber-600 text-[8px] font-bold animate-pulse uppercase tracking-tighter">Eyes Fixed</span>}
+          </div>
         </div>
       </div>
       
-      {/* Glow effects */}
-      <div className={`absolute -right-4 -bottom-4 w-32 h-32 ${isDegraded ? 'bg-amber-600/5 group-hover:bg-amber-600/10' : 'bg-blue-600/5 group-hover:bg-blue-600/10'} rounded-full blur-3xl transition-colors`} />
+      {/* Decorative Glow */}
+      <div className={`absolute -right-10 -bottom-10 w-40 h-40 ${isDegraded ? 'bg-amber-600/10' : 'bg-amber-500/5'} rounded-full blur-3xl`} />
     </div>
   );
 }

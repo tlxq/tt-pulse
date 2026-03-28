@@ -1,149 +1,110 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 30;
 
-// SRE Inställningar - Justerade för att maximera Free Tier-livslängd
-const CACHE_TTL_MINUTES = 60;
-const PRIMARY_MODEL = 'gemini-2.0-flash';
+function getFunnyFact(nodes: any[], commits: string[]) {
+  const totalCpu = nodes.reduce((acc, n) => acc + n.cpu, 0);
+  const avgRam = Math.round(nodes.reduce((acc, n) => acc + n.ram, 0) / nodes.length);
+  const totalCommits = commits.length;
+  const highLoadNode = nodes.find(n => n.cpu > 70);
+  const mostCommits = Math.max(...nodes.map(n => n.git_commits_24h || 0));
+
+  const facts = [
+    `Fun fact: At ${totalCpu}% total CPU, we have enough raw power to simulate a small galaxy... or at least run Chrome with 4 tabs open.`,
+    `Data alert: The family's average RAM usage is ${avgRam}%. We're officially using more memory than the Apollo 11 moon landing.`,
+    `Hustle report: ${totalCommits} conquests recently. If code were coffee, we'd be vibrating at a cellular level by now.`,
+    `Mascot observation: ${highLoadNode ? highLoadNode.name : 'The cluster'} is purring quite loudly. I suspect some heavy-duty math is happening.`,
+    `Efficiency check: With ${mostCommits} logs on our top station, we're out-pacing a caffeinated squirrel on a deadline.`,
+    `Thermal update: The workstations are radiating enough heat to keep my Bengal paws warm all winter. Keep grinding!`,
+    `Network whisper: Our latency is so low, I can practically see the bits moving before they even decide where to go.`
+  ];
+
+  return facts[Math.floor(Math.random() * facts.length)];
+}
+
+const BENGAL_PERSONALITY = {
+  STRESSED: [
+    "Hiss! Someone's pouncing on those tasks! Station {name} is getting quite warm.",
+    "My whiskers are twitching! {name} is pushing {cpu}% CPU. That's a lot of hunting!",
+    "Grrr... heavy lifting detected. I'm watching the thermal levels closely, Human."
+  ],
+  PRODUCTIVE: [
+    "Prrrrt! {count} conquests secured. The code harvest is looking magnificent today.",
+    "I see fresh logs! The family is marking the digital landscape with pure productivity.",
+    "Magnificent! Your momentum is legendary. I've noted every single one of those {count} updates."
+  ],
+  IDLE: [
+    "The studio is quiet. I'll take the high ground and monitor the resting pulse.",
+    "Purrr... serene levels across the stations. A perfect time for some digital grooming.",
+    "All systems nominal. I'm just here for the server-rack warmth and the occasional data packet."
+  ],
+  DEGRADED: [
+    "Mrow? A station has gone to sleep. I've lost the scent of the connection.",
+    "The link is tangled. I'm batting at the wires, but {name} remains silent.",
+    "A gap in our lineup! I'll stay on high alert until the full pack returns."
+  ]
+};
+
+function getInsight(nodes: any[], commits: string[]) {
+  const onlineNodes = nodes.filter(n => n.online);
+  const offlineNodes = nodes.filter(n => !n.online);
+  const highLoadNode = onlineNodes.find(n => n.cpu > 75 || n.ram > 80);
+  const totalCommits = commits.length;
+
+  // 1/3 chance to show a "Cool Fact" instead of a status report
+  if (Math.random() > 0.66 && nodes.length > 0) {
+    return getFunnyFact(nodes, commits);
+  }
+
+  if (offlineNodes.length > 0) {
+    const random = BENGAL_PERSONALITY.DEGRADED[Math.floor(Math.random() * BENGAL_PERSONALITY.DEGRADED.length)];
+    return random.replace('{name}', offlineNodes[0].name);
+  }
+
+  if (highLoadNode) {
+    const random = BENGAL_PERSONALITY.STRESSED[Math.floor(Math.random() * BENGAL_PERSONALITY.STRESSED.length)];
+    return random.replace('{name}', highLoadNode.name).replace('{cpu}', highLoadNode.cpu.toString());
+  }
+
+  if (totalCommits > 0) {
+    const random = BENGAL_PERSONALITY.PRODUCTIVE[Math.floor(Math.random() * BENGAL_PERSONALITY.PRODUCTIVE.length)];
+    return random.replace('{count}', totalCommits.toString());
+  }
+
+  return BENGAL_PERSONALITY.IDLE[Math.floor(Math.random() * BENGAL_PERSONALITY.IDLE.length)];
+}
 
 export async function POST(req: Request) {
-  const apiKey = process.env.GEMINI_API_KEY;
-
   try {
     const body = await req.json();
-    const { nodes, commits, forceRefresh } = body;
+    const { nodes, commits } = body;
 
-    // 1. Snabb-validering
     if (!nodes || !Array.isArray(nodes) || nodes.length === 0) {
-      return NextResponse.json({ insight: 'Infrastructure silent, sir.' });
+      return NextResponse.json({ insight: "The studio is silent. Waiting for the first station to report for duty." });
     }
 
-    // 2. Data Alignment (Bantad payload för att spara tokens)
-    const mappedNodes = nodes.map((n: any) => ({
-      name: n.node_name || n.name || 'unknown',
-      cpu: n.cpu_usage ?? n.cpu ?? 0,
-      online: !!n.online,
-    }));
-
-    const onlineNodes = mappedNodes.filter((n: any) => n.online);
-    const activeNode = onlineNodes[0] || mappedNodes[0];
-
-    // 3. Aggressiv SRE Caching (Sparar Quota)
-    const { data: cachedData } = await supabase
-      .from('node_status')
-      .select('last_ai_insight, last_ai_timestamp')
-      .eq('node_name', activeNode.name)
-      .single();
-
-    const cacheAge = cachedData?.last_ai_timestamp
-      ? (Date.now() - new Date(cachedData.last_ai_timestamp).getTime()) /
-        (1000 * 60)
-      : 999;
-
-    if (
-      !forceRefresh &&
-      cacheAge < CACHE_TTL_MINUTES &&
-      cachedData?.last_ai_insight
-    ) {
-      console.log(
-        `[SRE] Cache Hit (${Math.round(cacheAge)}m old). Respecting Rate Limits.`,
-      );
-      return NextResponse.json({
-        insight: cachedData.last_ai_insight,
-        cached: true,
-      });
-    }
-
-    // 4. AI Dispatcher med Quota-Guard
-    if (apiKey && onlineNodes.length > 0) {
-      // Vi provar 2.0 först på den stabila v1-routen
-      const modelsToTry = [PRIMARY_MODEL, 'gemini-1.5-flash'];
-
-      for (const modelName of modelsToTry) {
-        try {
-          const url = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${apiKey}`;
-
-          const payload = {
-            contents: [
-              {
-                parts: [
-                  {
-                    text: `SRE Standup. Nodes: ${JSON.stringify(mappedNodes)}. Recent: ${JSON.stringify((commits || []).slice(0, 3))}. 3 witty British sentences max.`,
-                  },
-                ],
-              },
-            ],
-            generationConfig: { maxOutputTokens: 150 }, // Håller nere kostnaden/tokens
-          };
-
-          const res = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
-
-          if (res.status === 429) {
-            console.warn(
-              `[SRE] Rate Limit Exceeded (429) for ${modelName}. Tactical retreat to fallback.`,
-            );
-            break; // Sluta försöka om vi är spärrade
-          }
-
-          if (res.ok) {
-            const data = await res.json();
-            const insight =
-              data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-
-            if (insight) {
-              console.log(
-                `[SRE] Insight generated via ${modelName}. Updating node_status cache.`,
-              );
-
-              const nodeNames = onlineNodes.map((n) => n.name);
-              await supabase
-                .from('node_status')
-                .update({
-                  last_ai_insight: insight,
-                  last_ai_timestamp: new Date().toISOString(),
-                })
-                .in('node_name', nodeNames);
-
-              return NextResponse.json({
-                insight,
-                cached: false,
-                model: modelName,
-              });
-            }
-          }
-
-          console.log(
-            `[SRE] Model ${modelName} returned ${res.status}. Trying next...`,
-          );
-        } catch (e) {
-          console.error(`[SRE] Dispatch error for ${modelName}:`, e);
-        }
-      }
-    }
-
-    // 5. Deterministic Fallback (Visas när Quota är slut)
-    const workhorse = mappedNodes.reduce((prev: any, curr: any) =>
-      prev.cpu > curr.cpu ? prev : curr,
-    );
-
-    const fallback = `[SRE FALLBACK] Systems nominal at ${activeNode.cpu}% load. The AI link is currently throttled by Google, but ${workhorse.name} is clearly doing the heavy lifting while I brew some digital tea.`;
-
-    return NextResponse.json({
-      insight: fallback,
-      fallback: true,
-      quotaExceeded: true,
+    const mappedNodes = nodes.map((n: any) => {
+      const lastSeen = n.last_seen ? new Date(n.last_seen).getTime() : 0;
+      const isOnline = lastSeen ? (Date.now() - lastSeen) / 60000 < 10 : false;
+      return {
+        name: n.node_name || n.name || 'unknown',
+        cpu: n.cpu_usage ?? 0,
+        ram: n.ram_usage ?? 0,
+        online: typeof n.online === 'boolean' ? n.online : isOnline,
+        git_commits_24h: n.git_commits_24h ?? 0
+      };
     });
-  } catch (error: any) {
-    console.error('CRITICAL_SRE_FAILURE:', error);
+
+    const insight = getInsight(mappedNodes, commits || []);
+
     return NextResponse.json({
-      insight:
-        'Analytical circuits are offline. Systems remain operational, sir.',
+      insight,
+      local: true,
+      mascot: 'Bengal'
+    });
+  } catch (error) {
+    return NextResponse.json({
+      insight: "My whiskers are tingling... something's not right with the studio data."
     });
   }
 }
