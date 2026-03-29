@@ -110,12 +110,11 @@ export function NodeCard({ node }: { node: NodeStatus }) {
           </div>
         </Grid>
 
-        <Flex className="mt-6 border-t border-slate-800/30 pt-4 opacity-50 font-sans">
-          <Flex justifyContent="start" className="gap-2 text-slate-500">
+        <Flex className="mt-6 border-t border-slate-800/30 pt-4 font-sans">
+          <Flex justifyContent="start" className={`gap-2 ${isOnline ? 'text-emerald-500' : 'text-slate-500 opacity-50'}`}>
             <Wifi className="w-3 h-3" />
-            <Text className="text-[9px] font-bold font-mono">{node.latency_ms || 0}ms</Text>
+            <Text className={`text-[9px] font-bold font-mono ${isOnline ? 'text-emerald-500' : 'text-slate-500'}`}>{node.latency_ms || 0}ms</Text>
           </Flex>
-          <Text className="text-[9px] font-black uppercase tracking-widest text-slate-600 italic">Bengal Verified</Text>
         </Flex>
       </Card>
 
