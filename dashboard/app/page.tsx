@@ -4,14 +4,7 @@ import { useStatus } from '@/hooks/useStatus';
 import { NodeCard } from '@/components/NodeCard';
 import { SREInsight } from '@/components/SREInsight';
 import { Footer } from '@/components/Footer';
-import {
-  RefreshCcw,
-  GitBranch,
-  Settings,
-  Zap,
-  LayoutGrid,
-  Trophy
-} from 'lucide-react';
+import { RefreshCcw, GitBranch, Zap, LayoutGrid } from 'lucide-react';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 
 export default function Dashboard() {
@@ -19,7 +12,10 @@ export default function Dashboard() {
   const [insight, setInsight] = useState<string>('');
   const [loadingAI, setLoadingAI] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [aiMetadata, setAiMetadata] = useState<{ fallback?: boolean; quotaExceeded?: boolean }>({});
+  const [aiMetadata, setAiMetadata] = useState<{
+    fallback?: boolean;
+    quotaExceeded?: boolean;
+  }>({});
 
   const getStats = useCallback((currentNodes: any[]) => {
     if (currentNodes.length === 0)
@@ -43,7 +39,7 @@ export default function Dashboard() {
     async (currentNodes = nodes, force = false) => {
       if (currentNodes.length === 0) return;
 
-      const firstWithInsight = currentNodes.find(n => n.last_ai_insight);
+      const firstWithInsight = currentNodes.find((n) => n.last_ai_insight);
       if (!force && firstWithInsight?.last_ai_insight) {
         setInsight(firstWithInsight.last_ai_insight);
         return;
@@ -51,7 +47,7 @@ export default function Dashboard() {
 
       setLoadingAI(true);
       try {
-        const allCommits = currentNodes.flatMap(n => n.recent_commits || []);
+        const allCommits = currentNodes.flatMap((n) => n.recent_commits || []);
         const res = await fetch('/api/insights', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -67,7 +63,7 @@ export default function Dashboard() {
         setInsight(data.insight);
         setAiMetadata({
           fallback: data.fallback,
-          quotaExceeded: data.quotaExceeded
+          quotaExceeded: data.quotaExceeded,
         });
       } catch (e) {
         setInsight(
@@ -103,7 +99,11 @@ export default function Dashboard() {
           <div className="space-y-1">
             <div className="flex items-center gap-3">
               <div className="bg-amber-600/20 p-2 rounded-xl border border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.1)]">
-                <Trophy className="w-6 h-6 text-amber-500" />
+                <img
+                  src="/pulse-icon.png"
+                  alt="Studio Icon"
+                  className="w-9 h-9 object-contain"
+                />
               </div>
               <h1 className="text-2xl font-black tracking-tight text-white uppercase italic">
                 tt family's{' '}
@@ -125,9 +125,6 @@ export default function Dashboard() {
                 className={`w-4 h-4 text-slate-500 group-hover:text-amber-400 ${isRefreshing || loadingAI ? 'animate-spin' : ''}`}
               />
             </button>
-            <div className="p-2.5 bg-slate-900/50 border border-slate-800 rounded-xl">
-              <Settings className="w-4 h-4 text-slate-600" />
-            </div>
           </div>
         </header>
 
@@ -153,8 +150,8 @@ export default function Dashboard() {
           <div className="bg-[#0f172a]/40 border border-slate-800/60 rounded-3xl p-8 relative overflow-hidden group shadow-[0_0_15px_rgba(245,158,11,0.05)] transition-all hover:shadow-[0_0_20px_rgba(245,158,11,0.1)]">
             <div className="relative z-10 space-y-4">
               <div className="flex items-center gap-3 text-slate-500 font-black uppercase tracking-[0.2em] text-[10px]">
-                <Zap className="w-4 h-4 text-amber-500 fill-amber-500/20" />{' '}
-                Dev Momentum
+                <Zap className="w-4 h-4 text-amber-500 fill-amber-500/20" /> Dev
+                Momentum
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-5xl font-black text-white tracking-tighter font-mono">
@@ -168,11 +165,11 @@ export default function Dashboard() {
             <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-amber-600/5 rounded-full blur-2xl group-hover:bg-amber-600/10 transition-colors" />
           </div>
 
-          <SREInsight 
-            insight={insight} 
-            loading={loadingAI} 
-            fallback={aiMetadata.fallback} 
-            quotaExceeded={aiMetadata.quotaExceeded} 
+          <SREInsight
+            insight={insight}
+            loading={loadingAI}
+            fallback={aiMetadata.fallback}
+            quotaExceeded={aiMetadata.quotaExceeded}
           />
         </section>
 
