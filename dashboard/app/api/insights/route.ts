@@ -29,7 +29,7 @@ const BENGAL_PERSONALITY = {
     "Grrr... heavy lifting detected. I'm watching the thermal levels closely, Human."
   ],
   PRODUCTIVE: [
-    "Prrrrt! {count} conquests secured. The code harvest is looking magnificent today.",
+    "Prrrrt! {count} commits secured. The code harvest is looking magnificent today.",
     "I see fresh logs! The family is marking the digital landscape with pure productivity.",
     "Magnificent! Your momentum is legendary. I've noted every single one of those {count} updates."
   ],

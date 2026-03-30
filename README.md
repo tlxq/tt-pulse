@@ -16,7 +16,8 @@ TT-Pulse transforms standard server monitoring into a proactive SRE (Site Reliab
 
 ## 🐾 The Intelligence: "Texas" AI
 The ecosystem features **Texas**, a Bengal-inspired AI persona that acts as the studio guardian. 
-- **Proactive Insights**: Correlates telemetry data with Git conquests to provide witty, actionable observations.
+- **Proactive Insights**: Correlates telemetry data with Git commits to
+ provide witty, actionable observations.
 - **Resilience Engineering**: Powered by a custom **SRE Fallback Engine**. While architected to support **Gemini 1.5 Flash**, the system currently utilizes a high-performance heuristic engine in `dashboard/app/api/insights/route.ts` to maintain 100% uptime during API rate limits or outages.
 
 ## 🏗️ Full-Stack Architecture

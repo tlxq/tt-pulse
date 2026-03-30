@@ -19,7 +19,7 @@ Before any task is considered "complete" or "delivered," the following checks **
     *   Offline = "Sleeping"
     *   Node = "Station"
     *   Infrastructure = "Active Workstations"
-    *   Commits = "Conquests"
+    *   Commits = "Commits"
 
 ## 🛠️ Technical Standards
 *   **Local AI**: Heuristic engine in `dashboard/app/api/insights/route.ts` with real-time data integration.

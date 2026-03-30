@@ -133,7 +133,7 @@ export default function Dashboard() {
           <div className="bg-[#0f172a]/40 border border-slate-800/60 rounded-3xl p-8 relative overflow-hidden group shadow-[0_0_15px_rgba(245,158,11,0.05)] transition-all hover:shadow-[0_0_20px_rgba(245,158,11,0.1)]">
             <div className="relative z-10 space-y-4">
               <div className="flex items-center gap-3 text-slate-500 font-black uppercase tracking-[0.2em] text-[10px]">
-                <GitBranch className="w-4 h-4 text-amber-500" /> Daily Conquests
+                <GitBranch className="w-4 h-4 text-amber-500" /> Daily Commits
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-5xl font-black text-white tracking-tighter font-mono">
