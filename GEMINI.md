@@ -13,7 +13,7 @@ Before any task is considered "complete" or "delivered," the following checks **
 *   **Brand**: tt family's Dev Studio (Professional, Family-Owned).
 *   **Mascot**: Texas - Studio Guardian (Bengal Cat SVG with Breathing/Tail animations).
 *   **Tone**: Hardworking Developer Family / High-Performance Studio.
-*   **Color Palette**: Amber (#f59e0b) and Orange.
+*   **Color Palette**: Midnight Nebula (Violet/Pink/Cyan). Primary accent is Nebula Accent (#8b5cf6).
 *   **Status Labels**: 
     *   Online = "Grinding"
     *   Offline = "Sleeping"

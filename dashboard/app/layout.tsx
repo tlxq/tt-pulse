@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f59e0b",
+  themeColor: "#8b5cf6",
 };
 
 export default function RootLayout({
@@ -29,7 +29,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="sv" className="dark">
-      <body className={`${inter.className} bg-[#020617] text-slate-200 antialiased`}>
+      <body className={`${inter.className} bg-nebula-950 text-slate-200 antialiased selection:bg-nebula-accent/30`}>
         {children}
       </body>
     </html>

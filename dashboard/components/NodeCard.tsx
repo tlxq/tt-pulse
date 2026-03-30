@@ -27,7 +27,7 @@ export function NodeCard({ node }: { node: NodeStatus }) {
 
   return (
     <Fragment>
-      <Card className={`bg-[#0f172a]/60 border-slate-800 ring-0 shadow-[0_0_15px_rgba(245,158,11,0.05)] backdrop-blur-xl group transition-all hover:bg-[#0f172a]/80 hover:shadow-[0_0_20px_rgba(245,158,11,0.1)] hover:border-slate-700/50 ${!isOnline ? 'grayscale-[0.5] opacity-80' : ''}`}>
+      <Card className={`bg-white/5 border-white/5 ring-0 shadow-[0_0_15px_rgba(139,92,246,0.05)] backdrop-blur-xl group transition-all hover:bg-white/10 hover:shadow-[0_0_20px_rgba(139,92,246,0.1)] hover:border-white/10 ${!isOnline ? 'grayscale-[0.5] opacity-80' : ''}`}>
         <Flex alignItems="start" className="mb-4">
           <div className="space-y-1">
             <Title className="text-white font-black tracking-tight font-sans">{node.node_name}</Title>
@@ -37,15 +37,15 @@ export function NodeCard({ node }: { node: NodeStatus }) {
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => setIsOpen(true)}
-                className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-500 hover:text-amber-400 hover:border-amber-500/30 transition-all active:scale-90"
+                className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-slate-500 hover:text-nebula-accent hover:border-nebula-accent/30 transition-all active:scale-90"
                 title="Open Process Monitor"
               >
                 <Terminal className="w-3.5 h-3.5" />
               </button>
               {isOnline ? (
-                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.1)]">
-                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
-                  <span className="text-[8px] font-black uppercase tracking-widest text-amber-500">Grinding</span>
+                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-nebula-accent/10 border border-nebula-accent/20 shadow-[0_0_10px_rgba(139,92,246,0.1)]">
+                  <div className="w-1.5 h-1.5 rounded-full bg-nebula-accent animate-pulse shadow-[0_0_8px_rgba(139,92,246,0.6)]" />
+                  <span className="text-[8px] font-black uppercase tracking-widest text-nebula-accent">Grinding</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-500/10 border border-slate-500/20">
@@ -68,7 +68,7 @@ export function NodeCard({ node }: { node: NodeStatus }) {
               data={chartData}
               index="time"
               categories={["CPU Usage", "RAM Usage"]}
-              colors={["amber", "orange"]}
+              colors={["violet", "pink"]}
               showLegend={false}
               showGridLines={false}
               showXAxis={false}
@@ -77,18 +77,18 @@ export function NodeCard({ node }: { node: NodeStatus }) {
               curveType="monotone"
             />
           ) : (
-            <div className="h-full w-full bg-slate-900/20 rounded-xl animate-pulse flex items-center justify-center">
+            <div className="h-full w-full bg-white/5 rounded-xl animate-pulse flex items-center justify-center">
                <Activity className="w-5 h-5 text-slate-800" />
             </div>
           )}
         </div>
 
-        <Grid numItems={3} className="mt-6 border-t border-slate-800/60 pt-6 gap-4 font-sans">
+        <Grid numItems={3} className="mt-6 border-t border-white/5 pt-6 gap-4 font-sans">
           <div className="space-y-1 group/cpu cursor-pointer" onClick={() => setIsOpen(true)}>
             <Flex justifyContent="start" className="gap-2 text-slate-500">
-              <Cpu className="w-3 h-3 group-hover/cpu:text-amber-400 transition-colors" />
+              <Cpu className="w-3 h-3 group-hover/cpu:text-nebula-accent transition-colors" />
               <Text className="text-[9px] font-black uppercase tracking-tighter">CPU</Text>
-              <Info className="w-2.5 h-2.5 opacity-0 group-hover/cpu:opacity-100 transition-all text-amber-500" />
+              <Info className="w-2.5 h-2.5 opacity-0 group-hover/cpu:opacity-100 transition-all text-nebula-accent" />
             </Flex>
             <Metric className="text-sm font-black text-slate-200 font-mono">{node.cpu_usage}%</Metric>
           </div>

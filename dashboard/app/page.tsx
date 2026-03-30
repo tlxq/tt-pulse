@@ -92,13 +92,18 @@ export default function Dashboard() {
   const stats = useMemo(() => getStats(nodes), [nodes, getStats]);
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-200 font-sans flex flex-col">
-      <main className="p-6 md:p-12 max-w-7xl mx-auto space-y-10 flex-grow w-full">
+    <div className="min-h-screen bg-nebula-950 text-slate-200 font-sans flex flex-col relative overflow-hidden">
+      {/* Background Ambient Glows */}
+      <div className="fixed inset-0 -z-10 nebula-gradient opacity-40" />
+      <div className="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] bg-nebula-accent/10 blur-[120px] rounded-full -z-10 animate-pulse-glow" />
+      <div className="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-nebula-secondary/5 blur-[120px] rounded-full -z-10" />
+
+      <main className="p-6 md:p-12 max-w-7xl mx-auto space-y-10 flex-grow w-full relative z-10">
         {/* Global Header */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="space-y-1">
             <div className="flex items-center gap-3">
-              <div className="bg-amber-600/20 p-2 rounded-xl border border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.1)]">
+              <div className="bg-nebula-accent/20 p-2 rounded-xl border border-nebula-accent/20 shadow-[0_0_15px_rgba(139,92,246,0.1)]">
                 <img
                   src="/pulse-icon.png"
                   alt="Studio Icon"
@@ -107,7 +112,7 @@ export default function Dashboard() {
               </div>
               <h1 className="text-2xl font-black tracking-tight text-white uppercase italic">
                 tt family's{' '}
-                <span className="text-amber-500 font-light">Dev Studio</span>
+                <span className="text-nebula-accent font-light">Dev Studio</span>
               </h1>
             </div>
             <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.4em] ml-12">
@@ -119,10 +124,10 @@ export default function Dashboard() {
             <button
               onClick={handleManualRefresh}
               disabled={isRefreshing || loadingAI}
-              className="p-2.5 bg-slate-900/50 border border-slate-800 rounded-xl hover:bg-slate-800 transition-all active:scale-95 group disabled:opacity-50"
+              className="p-2.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all active:scale-95 group disabled:opacity-50 backdrop-blur-md"
             >
               <RefreshCcw
-                className={`w-4 h-4 text-slate-500 group-hover:text-amber-400 ${isRefreshing || loadingAI ? 'animate-spin' : ''}`}
+                className={`w-4 h-4 text-slate-500 group-hover:text-nebula-accent ${isRefreshing || loadingAI ? 'animate-spin' : ''}`}
               />
             </button>
           </div>
@@ -130,39 +135,39 @@ export default function Dashboard() {
 
         {/* Global Stats Grid */}
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-[#0f172a]/40 border border-slate-800/60 rounded-3xl p-8 relative overflow-hidden group shadow-[0_0_15px_rgba(245,158,11,0.05)] transition-all hover:shadow-[0_0_20px_rgba(245,158,11,0.1)]">
+          <div className="bg-white/5 border border-white/5 rounded-3xl p-8 relative overflow-hidden group shadow-[0_0_15px_rgba(139,92,246,0.05)] transition-all hover:shadow-[0_0_20px_rgba(139,92,246,0.1)] backdrop-blur-sm">
             <div className="relative z-10 space-y-4">
               <div className="flex items-center gap-3 text-slate-500 font-black uppercase tracking-[0.2em] text-[10px]">
-                <GitBranch className="w-4 h-4 text-amber-500" /> Daily Commits
+                <GitBranch className="w-4 h-4 text-nebula-accent" /> Daily Commits
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-5xl font-black text-white tracking-tighter font-mono">
                   {stats.totalCommits}
                 </span>
-                <span className="text-amber-500 font-bold text-sm italic">
+                <span className="text-nebula-accent font-bold text-sm italic">
                   Logs
                 </span>
               </div>
             </div>
-            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-amber-600/5 rounded-full blur-2xl group-hover:bg-amber-600/10 transition-colors" />
+            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-nebula-accent/5 rounded-full blur-2xl group-hover:bg-nebula-accent/10 transition-colors" />
           </div>
 
-          <div className="bg-[#0f172a]/40 border border-slate-800/60 rounded-3xl p-8 relative overflow-hidden group shadow-[0_0_15px_rgba(245,158,11,0.05)] transition-all hover:shadow-[0_0_20px_rgba(245,158,11,0.1)]">
+          <div className="bg-white/5 border border-white/5 rounded-3xl p-8 relative overflow-hidden group shadow-[0_0_15px_rgba(139,92,246,0.05)] transition-all hover:shadow-[0_0_20px_rgba(139,92,246,0.1)] backdrop-blur-sm">
             <div className="relative z-10 space-y-4">
               <div className="flex items-center gap-3 text-slate-500 font-black uppercase tracking-[0.2em] text-[10px]">
-                <Zap className="w-4 h-4 text-amber-500 fill-amber-500/20" /> Dev
+                <Zap className="w-4 h-4 text-nebula-accent fill-nebula-accent/20" /> Dev
                 Momentum
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-5xl font-black text-white tracking-tighter font-mono">
                   {stats.efficiency}
                 </span>
-                <span className="text-amber-500 font-bold text-sm italic">
+                <span className="text-nebula-accent font-bold text-sm italic">
                   Score
                 </span>
               </div>
             </div>
-            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-amber-600/5 rounded-full blur-2xl group-hover:bg-amber-600/10 transition-colors" />
+            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-nebula-accent/5 rounded-full blur-2xl group-hover:bg-nebula-accent/10 transition-colors" />
           </div>
 
           <SREInsight
@@ -175,14 +180,14 @@ export default function Dashboard() {
 
         {/* Monitored Stations */}
         <section className="space-y-8">
-          <div className="flex items-center justify-between border-b border-slate-800/40 pb-6">
+          <div className="flex items-center justify-between border-b border-white/5 pb-6">
             <div className="flex items-center gap-3">
-              <LayoutGrid className="w-4 h-4 text-amber-500" />
+              <LayoutGrid className="w-4 h-4 text-nebula-accent" />
               <h2 className="text-xs font-black text-white uppercase tracking-[0.4em]">
                 Active Workstations
               </h2>
             </div>
-            <span className="px-3 py-1 bg-slate-900 border border-slate-800 rounded-full text-[9px] font-black text-slate-500 uppercase tracking-widest font-mono">
+            <span className="px-3 py-1 bg-white/5 border border-white/5 rounded-full text-[9px] font-black text-slate-500 uppercase tracking-widest font-mono backdrop-blur-sm">
               {nodes.length} Stations Online
             </span>
           </div>
@@ -192,7 +197,7 @@ export default function Dashboard() {
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="h-64 bg-slate-900/40 rounded-3xl border border-slate-800/60 animate-pulse"
+                  className="h-64 bg-white/5 rounded-3xl border border-white/5 animate-pulse"
                 />
               ))}
             </div>

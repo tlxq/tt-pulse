@@ -1,17 +1,79 @@
 @import "tailwindcss";
 
-@theme {
-  --color-background: #020617;
+@theme inline {
+  /* Midnight Nebula Palette */
+  --color-nebula-950: #05050a;
+  --color-nebula-900: #0a0a1f;
+  --color-nebula-800: #16163d;
+  --color-nebula-accent: #8b5cf6; /* Violet */
+  --color-nebula-secondary: #ec4899; /* Pink */
+  --color-nebula-cyan: #06b6d4; /* Cyan */
+
+  /* Semantic */
+  --color-background: var(--color-nebula-950);
   --color-foreground: #f8fafc;
+  --color-muted: #94a3b8;
+  --color-surface: rgba(15, 15, 35, 0.4);
+  --color-border: rgba(255, 255, 255, 0.05);
+
+  /* Animation */
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-pulse-glow: pulse-glow 4s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.2; filter: blur(80px); }
+  50% { opacity: 0.4; filter: blur(100px); }
 }
 
 :root {
-  background-color: #020617;
-  color: #f8fafc;
+  --background: var(--color-nebula-950);
+  --foreground: #f8fafc;
+  background-color: var(--background);
+  color: var(--foreground);
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  background-color: #020617;
+  background-color: var(--background);
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] shadow-[0_8px_32px_0_rgba(0,0,0,0.8)];
+  }
+  
+  .nebula-gradient {
+    background: radial-gradient(circle at 50% 50%, #1e1b4b 0%, #05050a 100%);
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-nebula-accent via-nebula-secondary to-nebula-cyan;
+  }
+}
+
+/* ─── Scrollbar Styling (Global) ────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-nebula-accent);
 }

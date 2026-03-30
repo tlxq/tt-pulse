@@ -43,7 +43,7 @@ export function ProcessModal({ isOpen, onClose, nodeName, processes }: ProcessMo
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm" />
+          <div className="fixed inset-0 bg-nebula-950/80 backdrop-blur-sm" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto font-sans">
@@ -57,10 +57,10 @@ export function ProcessModal({ isOpen, onClose, nodeName, processes }: ProcessMo
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-xl transform overflow-hidden rounded-3xl bg-[#0f172a] border border-slate-800 p-8 text-left align-middle shadow-[0_0_50px_rgba(59,130,246,0.1)] transition-all">
+              <Dialog.Panel className="w-full max-w-xl transform overflow-hidden rounded-3xl bg-nebula-900 border border-white/10 p-8 text-left align-middle shadow-[0_0_50px_rgba(139,92,246,0.1)] transition-all backdrop-blur-xl">
                 <Flex className="mb-6">
                   <Dialog.Title as="h3" className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
-                    <Terminal className="w-5 h-5 text-blue-500" />
+                    <Terminal className="w-5 h-5 text-nebula-accent" />
                     Process Monitor
                   </Dialog.Title>
                   <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
@@ -69,13 +69,13 @@ export function ProcessModal({ isOpen, onClose, nodeName, processes }: ProcessMo
                 </Flex>
                 
                 <Text className="text-slate-400 text-xs mb-8 font-bold tracking-wide">
-                  Live resource consumption analysis for <span className="text-blue-400 font-mono">{nodeName}</span>.
+                  Live resource consumption analysis for <span className="text-nebula-accent font-mono">{nodeName}</span>.
                 </Text>
 
-                <div className="overflow-hidden rounded-xl border border-slate-800/60 bg-slate-900/20">
+                <div className="overflow-hidden rounded-xl border border-white/5 bg-white/5">
                   <Table>
-                    <TableHead className="bg-slate-900/40">
-                      <TableRow className="border-slate-800">
+                    <TableHead className="bg-white/5">
+                      <TableRow className="border-white/5">
                         <TableHeaderCell className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Process</TableHeaderCell>
                         <TableHeaderCell className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">CPU %</TableHeaderCell>
                         <TableHeaderCell className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">RAM %</TableHeaderCell>
@@ -89,26 +89,26 @@ export function ProcessModal({ isOpen, onClose, nodeName, processes }: ProcessMo
                           const isHighLoad = p.cpu > 50;
                           
                           return (
-                            <TableRow key={idx} className="border-slate-800/50 hover:bg-blue-500/5 transition-colors group">
+                            <TableRow key={idx} className="border-white/5 hover:bg-nebula-accent/5 transition-colors group">
                               <TableCell className="text-xs font-bold text-slate-300">
                                 <div className="flex items-center gap-2">
-                                  <Activity className={`w-3 h-3 ${isHighLoad ? 'text-amber-500 animate-pulse' : 'text-slate-600'}`} />
+                                  <Activity className={`w-3 h-3 ${isHighLoad ? 'text-nebula-secondary animate-pulse' : 'text-slate-600'}`} />
                                   <span className="font-mono">{cleanName}</span>
                                 </div>
                               </TableCell>
                               <TableCell className="min-w-[120px]">
                                 <div className="flex flex-col gap-1.5">
                                   <div className="flex justify-between items-center text-[10px] font-mono">
-                                    <span className={isHighLoad ? 'text-amber-400' : 'text-blue-400'}>{p.cpu}%</span>
+                                    <span className={isHighLoad ? 'text-nebula-secondary' : 'text-nebula-accent'}>{p.cpu}%</span>
                                   </div>
-                                  <ProgressBar value={p.cpu} color={isHighLoad ? "amber" : "blue"} className="h-1" />
+                                  <ProgressBar value={p.cpu} color={isHighLoad ? "pink" : "violet"} className="h-1" />
                                 </div>
                               </TableCell>
-                              <TableCell className="text-xs font-mono text-indigo-400 text-right">{p.mem}%</TableCell>
+                              <TableCell className="text-xs font-mono text-nebula-cyan text-right">{p.mem}%</TableCell>
                               <TableCell className="text-right">
                                 <Badge 
                                   size="xs" 
-                                  color={isHighLoad ? "amber" : "emerald"}
+                                  color={isHighLoad ? "pink" : "emerald"}
                                   className="uppercase font-black text-[8px] tracking-tighter ring-0 px-2"
                                 >
                                   {isHighLoad ? "High Load" : "Normal"}
@@ -128,10 +128,10 @@ export function ProcessModal({ isOpen, onClose, nodeName, processes }: ProcessMo
                   </Table>
                 </div>
 
-                <div className="mt-8 border-t border-slate-800/60 pt-6">
+                <div className="mt-8 border-t border-white/5 pt-6">
                   <button
                     type="button"
-                    className="w-full inline-flex justify-center rounded-xl bg-slate-900 border border-slate-800 px-4 py-3 text-xs font-black uppercase text-slate-400 hover:text-white hover:bg-blue-600/20 hover:border-blue-500/30 transition-all active:scale-95"
+                    className="w-full inline-flex justify-center rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-xs font-black uppercase text-slate-400 hover:text-white hover:bg-nebula-accent/20 hover:border-nebula-accent/30 transition-all active:scale-95"
                     onClick={onClose}
                   >
                     Close Monitor
