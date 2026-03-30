@@ -9,12 +9,17 @@ import { getRelativeTime } from "@/lib/utils";
 export function NodeCard({ node }: { node: NodeStatus }) {
   const [isMounted, setIsMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [isOnline, setIsOnline] = useState(false);
   
-  useEffect(() => { setIsMounted(true); }, []);
+  useEffect(() => { 
+    const t = setTimeout(() => {
+      setIsMounted(true); 
+      const lastSeenDate = new Date(node.last_seen);
+      setIsOnline((Date.now() - lastSeenDate.getTime()) / 60000 < 10);
+    }, 0);
+    return () => clearTimeout(t);
+  }, [node.last_seen]);
 
-  const lastSeenDate = new Date(node.last_seen);
-  const isOnline = (Date.now() - lastSeenDate.getTime()) / 60000 < 10;
-  
   const chartData = (node.history || []).map(h => ({
     time: new Intl.DateTimeFormat('sv-SE', {
       hour: '2-digit',

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 
 export interface HistoryPoint {
@@ -35,7 +35,7 @@ export function useStatus() {
   const [nodes, setNodes] = useState<NodeStatus[]>([])
   const [loading, setLoading] = useState(true)
 
-  const fetchHistory = async (nodeName: string): Promise<HistoryPoint[]> => {
+  const fetchHistory = useCallback(async (nodeName: string): Promise<HistoryPoint[]> => {
     const { data, error } = await supabase
       .from('node_history')
       .select('cpu_usage, ram_usage, recorded_at')
@@ -45,9 +45,9 @@ export function useStatus() {
 
     if (error || !data) return []
     return data.reverse()
-  }
+  }, [])
 
-  const fetchStatus = async () => {
+  const fetchStatus = useCallback(async () => {
     const { data, error } = await supabase
       .from('node_status')
       .select('*')
@@ -67,10 +67,13 @@ export function useStatus() {
     }
     setLoading(false)
     return []
-  }
+  }, [fetchHistory])
 
   useEffect(() => {
-    fetchStatus()
+    const init = async () => {
+      await fetchStatus()
+    }
+    init()
 
     // Realtime subscription
     const channel = supabase
@@ -100,7 +103,7 @@ export function useStatus() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [])
+  }, [fetchStatus, fetchHistory])
 
   return { nodes, loading, refresh: fetchStatus }
 }

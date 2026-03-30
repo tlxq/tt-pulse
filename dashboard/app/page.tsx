@@ -1,6 +1,6 @@
 'use client';
 
-import { useStatus } from '@/hooks/useStatus';
+import { useStatus, NodeStatus } from '@/hooks/useStatus';
 import { NodeCard } from '@/components/NodeCard';
 import { SREInsight } from '@/components/SREInsight';
 import { Footer } from '@/components/Footer';
@@ -17,7 +17,7 @@ export default function Dashboard() {
     quotaExceeded?: boolean;
   }>({});
 
-  const getStats = useCallback((currentNodes: any[]) => {
+  const getStats = useCallback((currentNodes: NodeStatus[]) => {
     if (currentNodes.length === 0)
       return { totalCommits: 0, avgCpu: 0, efficiency: 0, activeNodes: 0 };
     const totalCommits = Math.max(
@@ -111,7 +111,7 @@ export default function Dashboard() {
                 />
               </div>
               <h1 className="text-2xl font-black tracking-tight text-white uppercase italic">
-                tt family's{' '}
+                tt family&apos;s{' '}
                 <span className="text-nebula-accent font-light">Dev Studio</span>
               </h1>
             </div>

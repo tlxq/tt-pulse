@@ -2,9 +2,17 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-function getFunnyFact(nodes: any[], commits: string[]) {
+interface NodeData {
+  name: string;
+  cpu: number;
+  ram: number;
+  online: boolean;
+  git_commits_24h?: number;
+}
+
+function getFunnyFact(nodes: NodeData[], commits: string[]) {
   const totalCpu = nodes.reduce((acc, n) => acc + n.cpu, 0);
-  const avgRam = Math.round(nodes.reduce((acc, n) => acc + n.ram, 0) / nodes.length);
+  const avgRam = nodes.length > 0 ? Math.round(nodes.reduce((acc, n) => acc + n.ram, 0) / nodes.length) : 0;
   const totalCommits = commits.length;
   const highLoadNode = nodes.find(n => n.cpu > 70);
   const mostCommits = Math.max(...nodes.map(n => n.git_commits_24h || 0));
@@ -45,7 +53,7 @@ const BENGAL_PERSONALITY = {
   ]
 };
 
-function getInsight(nodes: any[], commits: string[]) {
+function getInsight(nodes: NodeData[], commits: string[]) {
   const onlineNodes = nodes.filter(n => n.online);
   const offlineNodes = nodes.filter(n => !n.online);
   const highLoadNode = onlineNodes.find(n => n.cpu > 75 || n.ram > 80);
@@ -77,13 +85,13 @@ function getInsight(nodes: any[], commits: string[]) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { nodes, commits } = body;
+    const { nodes, commits } = body as { nodes: { node_name?: string, name?: string, cpu_usage?: number, ram_usage?: number, last_seen?: string, online?: boolean, git_commits_24h?: number }[], commits: string[] };
 
     if (!nodes || !Array.isArray(nodes) || nodes.length === 0) {
       return NextResponse.json({ insight: "The studio is silent. Waiting for the first station to report for duty." });
     }
 
-    const mappedNodes = nodes.map((n: any) => {
+    const mappedNodes: NodeData[] = nodes.map((n) => {
       const lastSeen = n.last_seen ? new Date(n.last_seen).getTime() : 0;
       const isOnline = lastSeen ? (Date.now() - lastSeen) / 60000 < 10 : false;
       return {
