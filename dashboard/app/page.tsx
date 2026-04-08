@@ -51,7 +51,7 @@ export default function Dashboard() {
         ? (topNode.git_author || topNode.node_name) 
         : null;
         
-    const activeBranch = topNode?.branch_name || null;
+    const activeBranch = topNode && topNode.branch_name ? `${topNode.repo_name || 'project'} / ${topNode.branch_name}` : null;
     const latestCommit = topNode?.recent_commits?.[0] || null;
 
     // Commit Distribution
@@ -163,8 +163,8 @@ export default function Dashboard() {
 
         {/* Global Stats Grid */}
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-white/5 border border-white/5 rounded-3xl p-8 relative overflow-hidden group shadow-[0_0_15px_rgba(139,92,246,0.05)] transition-all hover:shadow-[0_0_20px_rgba(139,92,246,0.1)] backdrop-blur-sm flex flex-col justify-between">
-            <div className="relative z-10 space-y-4">
+          <div className="bg-white/5 border border-white/5 rounded-3xl p-8 relative overflow-hidden group shadow-[0_0_15px_rgba(139,92,246,0.05)] transition-all hover:shadow-[0_0_20px_rgba(139,92,246,0.1)] backdrop-blur-sm flex flex-col min-h-[240px]">
+            <div className="relative z-10 space-y-4 mb-6">
               <div className="flex items-center gap-3 text-slate-500 font-black uppercase tracking-[0.2em] text-[10px]">
                 <GitBranch className="w-4 h-4 text-nebula-accent" /> Daily Commits
               </div>
@@ -172,80 +172,101 @@ export default function Dashboard() {
                 <span className="text-5xl font-black text-white tracking-tighter font-mono">
                   {stats.totalCommits}
                 </span>
-                <span className="text-nebula-accent font-bold text-sm italic">
+                <span className="text-nebula-accent font-bold text-sm italic uppercase tracking-widest">
                   Logs
                 </span>
               </div>
             </div>
             
-            <div className="relative z-10 pt-4 border-t border-white/5 mt-4 space-y-3">
-              {stats.activeBranch && (
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 bg-nebula-accent/10 border border-nebula-accent/20 rounded-md text-[8px] font-black uppercase tracking-widest text-nebula-accent">
-                    Branch: {stats.activeBranch}
-                  </span>
-                </div>
-              )}
-              {stats.latestCommit && (
-                <div className="text-[10px] text-slate-400 font-medium line-clamp-2 leading-relaxed">
-                  <span className="text-white/50 mr-1">Latest:</span>
-                  {stats.latestCommit}
-                </div>
-              )}
-              {stats.commitDistribution.length > 0 && (
-                <div className="flex flex-wrap gap-3 pt-2 border-t border-white/5">
-                  {stats.commitDistribution.map((dist, idx) => (
-                    <div key={idx} className="flex items-center gap-1.5 text-[10px] font-bold">
-                      <span className="text-slate-500">{dist.name}:</span>
-                      <span className="text-white font-mono">{dist.commits}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+            <div className="relative z-10 pt-4 border-t border-white/5 mt-auto space-y-4">
+              <div className="flex items-center justify-between text-[10px]">
+                <span className="font-black uppercase tracking-widest text-slate-500">Active Branch</span>
+                <span className={`px-2 py-0.5 rounded-md font-black uppercase tracking-tighter ${stats.activeBranch ? 'bg-nebula-accent/10 border border-nebula-accent/20 text-nebula-accent' : 'bg-white/5 text-slate-600'}`}>
+                  {stats.activeBranch || 'waiting...'}
+                </span>
+              </div>
+
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Latest Activity</span>
+                <p className={`text-[10px] font-medium leading-relaxed italic line-clamp-1 ${stats.latestCommit ? 'text-slate-300' : 'text-slate-600'}`}>
+                  {stats.latestCommit ? `"${stats.latestCommit}"` : 'No recent logs detected in this session.'}
+                </p>
+              </div>
+
+              <div className="pt-3 border-t border-white/5">
+                 <div className="flex flex-wrap gap-4">
+                   {stats.commitDistribution.length > 0 ? (
+                     stats.commitDistribution.map((dist, idx) => (
+                       <div key={idx} className="flex items-center gap-1.5">
+                         <div className="w-1 h-1 rounded-full bg-nebula-accent" />
+                         <span className="text-[10px] font-bold text-slate-400">{dist.name}:</span>
+                         <span className="text-[10px] font-black text-white font-mono">{dist.commits}</span>
+                       </div>
+                     ))
+                   ) : (
+                     <span className="text-[10px] font-bold text-slate-600 italic">Distribution pending...</span>
+                   )}
+                 </div>
+              </div>
             </div>
             
             <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-nebula-accent/5 rounded-full blur-2xl group-hover:bg-nebula-accent/10 transition-colors" />
           </div>
 
-          <div className="bg-white/5 border border-white/5 rounded-3xl p-8 relative overflow-hidden group shadow-[0_0_15px_rgba(139,92,246,0.05)] transition-all hover:shadow-[0_0_20px_rgba(139,92,246,0.1)] backdrop-blur-sm flex flex-col justify-between">
-            <div className="relative z-10 space-y-4">
+          <div className="bg-white/5 border border-white/5 rounded-3xl p-8 relative overflow-hidden group shadow-[0_0_15px_rgba(139,92,246,0.05)] transition-all hover:shadow-[0_0_20px_rgba(139,92,246,0.1)] backdrop-blur-sm flex flex-col min-h-[240px]">
+            <div className="relative z-10 space-y-4 mb-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 text-slate-500 font-black uppercase tracking-[0.2em] text-[10px]">
                   <Zap className="w-4 h-4 text-nebula-accent fill-nebula-accent/20" /> Dev Momentum
                 </div>
-                <div className={`flex items-center gap-1 px-2 py-1 rounded-md ${stats.totalCommits > 0 ? 'bg-emerald-400/10 text-emerald-400' : 'bg-slate-500/10 text-slate-500'}`}>
-                   <TrendingUp className="w-3 h-3" />
-                   <span className="text-[9px] font-bold">{stats.totalCommits > 0 ? 'ACTIVE' : 'IDLE'}</span>
+                <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[8px] font-black uppercase tracking-widest ${stats.totalCommits > 0 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-slate-500/10 border-slate-500/20 text-slate-500'}`}>
+                   <TrendingUp className="w-2.5 h-2.5" />
+                   {stats.totalCommits > 0 ? 'Trending Up' : 'Steady'}
                 </div>
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-5xl font-black text-white tracking-tighter font-mono">
                   {stats.efficiency}
                 </span>
-                <span className="text-nebula-accent font-bold text-sm italic">
+                <span className="text-nebula-accent font-bold text-sm italic uppercase tracking-widest">
                   Score
                 </span>
               </div>
             </div>
 
-            <div className="relative z-10 pt-4 border-t border-white/5 mt-4">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
-                  Top Contributor
-                </span>
-                {stats.topContributor ? (
-                  <div className="flex items-center gap-1.5">
-                    <Crown className="w-3.5 h-3.5 text-amber-400" />
-                    <span className="text-[11px] font-bold text-amber-400/90 truncate max-w-[100px]">{stats.topContributor}</span>
+            <div className="relative z-10 pt-4 border-t border-white/5 mt-auto space-y-4">
+              <div className="flex items-center justify-between group/contributor">
+                <div className="space-y-0.5">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Top Contributor</span>
+                  <div className="flex items-center gap-2">
+                    {stats.topContributor ? (
+                      <>
+                        <Crown className="w-3.5 h-3.5 text-amber-400" />
+                        <span className="text-xs font-black text-white uppercase italic tracking-tight">{stats.topContributor}</span>
+                      </>
+                    ) : (
+                      <span className="text-[10px] font-bold text-slate-600">Awaiting active hunting...</span>
+                    )}
                   </div>
-                ) : (
-                  <span className="text-[10px] font-bold text-slate-600">Awaiting Data</span>
-                )}
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-white/5 flex items-center justify-between">
+                 <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Momentum Trend</span>
+                 <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <div 
+                        key={i} 
+                        className={`w-1.5 h-3 rounded-sm transition-all ${i <= (parseFloat(stats.efficiency) * 10) ? 'bg-nebula-accent shadow-[0_0_5px_rgba(139,92,246,0.5)]' : 'bg-white/5'}`} 
+                      />
+                    ))}
+                 </div>
               </div>
             </div>
 
             <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-nebula-accent/5 rounded-full blur-2xl group-hover:bg-nebula-accent/10 transition-colors" />
           </div>
+
 
           <SREInsight
             insight={insight}

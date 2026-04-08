@@ -42,6 +42,9 @@ const collector = {
             // 4. Get the 5 most recent commit messages (för listan)
             const recentCmd = `git -C "${repoPath}" log -n 5 --pretty=format:"%s"`;
 
+            // 5. Get repo name (folder name of the git root)
+            const repoNameCmd = `git -C "${repoPath}" rev-parse --show-toplevel`;
+
             exec(branchCmd, (err0, stdout0) => {
                 const branch = stdout0 && !err0 ? stdout0.trim() : 'unknown';
                 
@@ -53,14 +56,20 @@ const collector = {
                         
                         exec(recentCmd, (err3, stdout3) => {
                             const messages = stdout3 && !err3 ? stdout3.trim().split('\n') : [];
-                            console.log(`[Git] Branch: ${branch} | Author: ${author || 'N/A'} | Found ${count} daily commits.`);
                             
-                            resolve({
-                                branch_name: branch,
-                                git_author: author,
-                                git_commits: count,
-                                git_commits_24h: count,
-                                recent_commits: messages
+                            exec(repoNameCmd, (err4, stdout4) => {
+                                const repoName = stdout4 && !err4 ? path.basename(stdout4.trim()) : 'unknown';
+                                
+                                console.log(`[Git] Repo: ${repoName} | Branch: ${branch} | Author: ${author || 'N/A'}`);
+                                
+                                resolve({
+                                    repo_name: repoName,
+                                    branch_name: branch,
+                                    git_author: author,
+                                    git_commits: count,
+                                    git_commits_24h: count,
+                                    recent_commits: messages
+                                });
                             });
                         });
                     });
