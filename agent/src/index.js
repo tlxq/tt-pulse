@@ -5,6 +5,7 @@ require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const config = {
     nodeName: process.env.COMPUTER_NAME || require('os').hostname(),
+    githubUsername: process.env.GITHUB_USERNAME,
     supabaseUrl: process.env.SUPABASE_URL,
     supabaseKey: process.env.SUPABASE_KEY,
     agentEmail: process.env.AGENT_EMAIL,
@@ -91,7 +92,10 @@ async function start() {
         console.warn(`[Warn] No AGENT_EMAIL/PASSWORD found. Proceeding as anonymous (Ensure RLS is disabled or public).`);
     }
 
-    console.log(`[TT-Pulse Agent] --- 🐆 BENGAL CAT EDITION 🐆 --- Monitoring: ${config.nodeName} every ${config.interval / 1000}s`);
+    console.log(`[TT-Pulse Agent] --- 🐆 BENGAL CAT EDITION 🐆 --- 
+    Station: ${config.nodeName} 
+    Pilot: ${config.githubUsername || 'Unknown'}
+    Monitoring every ${config.interval / 1000}s`);
     
     // Initial heartbeat
     await sendHeartbeat();
