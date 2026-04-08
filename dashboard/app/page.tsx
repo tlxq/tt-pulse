@@ -6,6 +6,7 @@ import { SREInsight } from '@/components/SREInsight';
 import { Footer } from '@/components/Footer';
 import { RefreshCcw, GitBranch, Zap, LayoutGrid, TrendingUp, Crown } from 'lucide-react';
 import { useEffect, useState, useCallback, useMemo } from 'react';
+import Image from 'next/image';
 
 interface DashboardStats {
   totalCommits: number;
@@ -93,7 +94,7 @@ export default function Dashboard() {
           fallback: data.fallback,
           quotaExceeded: data.quotaExceeded,
         });
-      } catch (e) {
+      } catch {
         setInsight(
           "My whiskers are tingling... something's not right with the studio data.",
         );
@@ -132,10 +133,12 @@ export default function Dashboard() {
           <div className="space-y-1">
             <div className="flex items-center gap-3">
               <div className="bg-nebula-accent/20 p-2 rounded-xl border border-nebula-accent/20 shadow-[0_0_15px_rgba(139,92,246,0.1)]">
-                <img
+                <Image
                   src="/pulse-icon.png"
                   alt="Studio Icon"
-                  className="w-9 h-9 object-contain"
+                  width={36}
+                  height={36}
+                  className="object-contain"
                 />
               </div>
               <h1 className="text-2xl font-black tracking-tight text-white uppercase italic">

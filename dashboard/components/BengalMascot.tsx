@@ -11,7 +11,6 @@ export function BengalMascot({ isHighLoad, isDegraded }: BengalMascotProps) {
   // Animation speeds based on state
   const tailSpeed = isHighLoad ? '1s' : '4s';
   const breathingSpeed = isHighLoad ? '1.5s' : '3s';
-  const earTwitchDelay = '2s';
 
   return (
     <div className="relative w-32 h-32 flex items-center justify-center">

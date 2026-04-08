@@ -2,7 +2,7 @@
 
 import { Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { Cpu, X, Terminal, Activity } from 'lucide-react';
+import { X, Terminal, Activity } from 'lucide-react';
 import { 
   Flex, 
   Text, 
