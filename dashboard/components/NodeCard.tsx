@@ -1,7 +1,7 @@
 'use client';
 import { NodeStatus } from "@/hooks/useStatus";
-import { Card, AreaChart, Title, Text, Flex, Grid, Metric } from "@tremor/react";
-import { Cpu, HardDrive, Wifi, Database, Info, Activity, Terminal, Monitor, Apple } from "lucide-react";
+import { Card, AreaChart, Title, Flex, CustomTooltipProps } from "@tremor/react";
+import { Cpu, HardDrive, Database, Activity, Terminal, Monitor, Apple, Wifi } from "lucide-react";
 import { useEffect, useState, Fragment } from "react";
 import { ProcessModal } from "./ProcessModal";
 import { getRelativeTime } from "@/lib/utils";
@@ -21,16 +21,16 @@ const OSIcon = ({ platform, distro }: { platform?: string, distro?: string }) =>
   return <Monitor className="w-4 h-4 text-slate-500" />;
 };
 
-const CustomTooltip = ({ payload, active, label }: any) => {
+const CustomTooltip = ({ payload, active, label }: CustomTooltipProps) => {
   if (!active || !payload) return null;
   return (
     <div className="bg-black/80 backdrop-blur-md border border-white/10 p-3 rounded-2xl shadow-2xl ring-1 ring-white/10">
       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 border-b border-white/5 pb-1">{label}</p>
       <div className="space-y-1.5">
-        {payload.map((category: any, idx: number) => (
+        {payload.map((category, idx: number) => (
           <div key={idx} className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: category.color === 'violet' ? '#8b5cf6' : '#ec4899' }} />
+              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: (category.color || 'violet') === 'violet' ? '#8b5cf6' : '#ec4899' }} />
               <span className="text-[10px] font-bold text-slate-300">{category.name}</span>
             </div>
             <span className="text-[10px] font-black text-white font-mono">{category.value}%</span>
@@ -46,6 +46,11 @@ export function NodeCard({ node }: { node: NodeStatus }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(false);
   
+  useEffect(() => {
+    const timer = setTimeout(() => setIsMounted(true), 0);
+    return () => clearTimeout(timer);
+  }, []);
+
   useEffect(() => { 
     const checkOnline = () => {
       const lastSeenDate = new Date(node.last_seen);
@@ -54,7 +59,6 @@ export function NodeCard({ node }: { node: NodeStatus }) {
       setIsOnline(diffMinutes < 15);
     };
 
-    setIsMounted(true); 
     checkOnline();
     const interval = setInterval(checkOnline, 30000); // Re-check every 30s
     return () => clearInterval(interval);

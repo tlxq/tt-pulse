@@ -4,7 +4,7 @@ import { useStatus, NodeStatus } from '@/hooks/useStatus';
 import { NodeCard } from '@/components/NodeCard';
 import { SREInsight } from '@/components/SREInsight';
 import { Footer } from '@/components/Footer';
-import { RefreshCcw, GitBranch, Zap, LayoutGrid, TrendingUp, Crown } from 'lucide-react';
+import { RefreshCcw, GitBranch, Zap, LayoutGrid, TrendingUp } from 'lucide-react';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import { SystemBoot } from '@/components/SystemBoot';
@@ -31,6 +31,18 @@ export default function Dashboard() {
     fallback?: boolean;
     quotaExceeded?: boolean;
   }>({});
+
+  useEffect(() => {
+    const hasBooted = sessionStorage.getItem('tt_pulse_booted');
+    if (hasBooted) {
+      setInitialLoading(false);
+    }
+  }, []);
+
+  const handleBootComplete = () => {
+    sessionStorage.setItem('tt_pulse_booted', 'true');
+    setInitialLoading(false);
+  };
 
   const getStats = useCallback((currentNodes: NodeStatus[]): DashboardStats => {
     if (currentNodes.length === 0)
@@ -125,7 +137,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-nebula-950 text-slate-200 font-sans flex flex-col relative overflow-hidden">
       <AnimatePresence mode="wait">
         {initialLoading ? (
-          <SystemBoot key="boot" onComplete={() => setInitialLoading(false)} />
+          <SystemBoot key="boot" onComplete={handleBootComplete} />
         ) : (
           <motion.div 
             key="dashboard"
