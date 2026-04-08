@@ -4,7 +4,7 @@ const fs = require('fs');
 
 const collector = {
     name: 'git_status',
-    async collect() {
+    async collect(config) {
         let repoPath = process.env.GIT_REPO_PATH;
         
         // Letar i ordning: Miljövariabel -> ../ (från agent) -> ./ (om agent körs från rot)
@@ -25,10 +25,10 @@ const collector = {
         }
 
         console.log(`[Git] Probing path: ${repoPath}`);
-        return this.collectLocal(repoPath);
+        return this.collectLocal(repoPath, config);
     },
 
-    async collectLocal(repoPath) {
+    async collectLocal(repoPath, config) {
         return new Promise((resolve) => {
             // 1. Get current branch name
             const branchCmd = `git -C "${repoPath}" rev-parse --abbrev-ref HEAD`;
@@ -66,6 +66,7 @@ const collector = {
                                     repo_name: repoName,
                                     branch_name: branch,
                                     git_author: author,
+                                    github_username: process.env.GITHUB_USERNAME || author,
                                     git_commits: count,
                                     git_commits_24h: count,
                                     recent_commits: messages

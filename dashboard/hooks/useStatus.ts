@@ -30,6 +30,7 @@ export interface NodeStatus {
   branch_name?: string
   repo_name?: string
   git_author?: string
+  github_username?: string
   top_processes?: ProcessInfo[]
   pending_updates?: number
 }

@@ -33,9 +33,7 @@ export default function Dashboard() {
     if (currentNodes.length === 0)
       return { totalCommits: 0, avgCpu: 0, efficiency: '0', activeNodes: 0, topContributor: null, activeBranch: null, latestCommit: null, commitDistribution: [] };
     
-    const totalCommits = Math.max(
-      ...currentNodes.map((n) => n.git_commits_24h || 0),
-    );
+    const totalCommits = currentNodes.reduce((acc, n) => acc + (n.git_commits_24h || 0), 0);
     const avgCpu = Math.round(
       currentNodes.reduce((acc, n) => acc + n.cpu_usage, 0) /
         currentNodes.length,
@@ -49,7 +47,7 @@ export default function Dashboard() {
     // Top Contributor & Branch detection
     const topNode = [...currentNodes].sort((a, b) => (b.git_commits_24h || 0) - (a.git_commits_24h || 0))[0];
     const topContributor = topNode && (topNode.git_commits_24h || 0) > 0 
-        ? (topNode.git_author || topNode.node_name) 
+        ? (topNode.github_username || topNode.git_author || topNode.node_name) 
         : null;
         
     const activeBranch = topNode && topNode.branch_name ? `${topNode.repo_name || 'project'} / ${topNode.branch_name}` : null;
@@ -58,7 +56,7 @@ export default function Dashboard() {
     // Commit Distribution
     const commitDistribution = currentNodes
         .filter(n => (n.git_commits_24h || 0) > 0)
-        .map(n => ({ name: n.git_author || n.node_name, commits: n.git_commits_24h }))
+        .map(n => ({ name: n.node_name, commits: n.git_commits_24h }))
         .sort((a, b) => b.commits - a.commits);
 
     return { totalCommits, avgCpu, efficiency, activeNodes, topContributor, activeBranch, latestCommit, commitDistribution };

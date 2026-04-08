@@ -36,7 +36,15 @@ export function NodeCard({ node }: { node: NodeStatus }) {
         <Flex alignItems="start" className="mb-4">
           <div className="space-y-1">
             <Title className="text-white font-black tracking-tight font-sans">{node.node_name}</Title>
-            <Text className="text-slate-500 uppercase text-[9px] font-black tracking-[0.2em] font-sans">Station Health</Text>
+            <div className="flex items-center gap-2">
+              <Text className="text-slate-500 uppercase text-[9px] font-black tracking-[0.2em] font-sans">Station Health</Text>
+              {node.github_username && (
+                <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-white/5 border border-white/10">
+                  <span className="text-[7px] font-bold text-slate-500 uppercase tracking-tighter">Pilot:</span>
+                  <span className="text-[7px] font-black text-nebula-accent uppercase italic">{node.github_username}</span>
+                </div>
+              )}
+            </div>
           </div>
           <div className="flex flex-col items-end gap-2">
             <div className="flex items-center gap-2">
@@ -119,7 +127,7 @@ export function NodeCard({ node }: { node: NodeStatus }) {
           <div className="mt-6 border-t border-white/5 pt-4 space-y-3">
             <Flex justifyContent="start" className="gap-2 text-slate-500 mb-1">
               <Terminal className="w-3 h-3 text-nebula-accent/70" />
-              <Text className="text-[9px] font-black uppercase tracking-widest">Recent Logs</Text>
+              <Text className="text-[9px] font-black uppercase tracking-widest">Station Logs</Text>
             </Flex>
             <div className="space-y-2">
               {node.recent_commits.slice(0, 3).map((commit, idx) => (
