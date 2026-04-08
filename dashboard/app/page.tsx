@@ -122,8 +122,11 @@ export default function Dashboard() {
     <div className="min-h-screen bg-nebula-950 text-slate-200 font-sans flex flex-col relative overflow-hidden">
       {/* Background Ambient Glows */}
       <div className="fixed inset-0 -z-10 nebula-gradient opacity-40" />
-      <div className="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] bg-nebula-accent/10 blur-[120px] rounded-full -z-10 animate-pulse-glow" />
-      <div className="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-nebula-secondary/5 blur-[120px] rounded-full -z-10" />
+      <div className="fixed top-[-10%] left-[-10%] w-[60%] h-[60%] bg-nebula-accent/20 blur-[140px] rounded-full -z-10 animate-pulse-glow" />
+      <div className="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-nebula-secondary/10 blur-[120px] rounded-full -z-10" />
+      
+      {/* Scanline / Grid Effect */}
+      <div className="fixed inset-0 -z-5 bg-[linear-gradient(rgba(18,16,33,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.02),rgba(0,255,0,0.01),rgba(0,0,255,0.02))] bg-[length:100%_4px,3px_100%] pointer-events-none opacity-20" />
 
       <main className="p-6 md:p-12 max-w-7xl mx-auto space-y-10 flex-grow w-full relative z-10">
         {/* Global Header */}
@@ -235,15 +238,25 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="relative z-10 pt-4 border-t border-white/5 mt-auto space-y-4">
+              <div className="pt-4 border-t border-white/5 mt-auto space-y-4">
               <div className="flex items-center justify-between group/contributor">
-                <div className="space-y-0.5">
+                <div className="space-y-1.5">
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Top Contributor</span>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     {stats.topContributor ? (
                       <>
-                        <Crown className="w-3.5 h-3.5 text-amber-400" />
-                        <span className="text-xs font-black text-white uppercase italic tracking-tight">{stats.topContributor}</span>
+                        <div className="relative w-8 h-8 rounded-full overflow-hidden border-2 border-nebula-accent/50 shadow-[0_0_10px_rgba(139,92,246,0.3)] bg-black/20">
+                          <Image 
+                            src={`https://github.com/${stats.topContributor}.png`}
+                            alt={stats.topContributor}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-black text-white uppercase italic tracking-tight leading-none">{stats.topContributor}</span>
+                          <span className="text-[8px] font-bold text-nebula-accent uppercase tracking-widest mt-0.5">Leading Sector</span>
+                        </div>
                       </>
                     ) : (
                       <span className="text-[10px] font-bold text-slate-600">Awaiting active hunting...</span>
@@ -286,10 +299,8 @@ export default function Dashboard() {
                 Active Workstations
               </h2>
             </div>
-            <span className="px-3 py-1 bg-white/5 border border-white/5 rounded-full text-[9px] font-black text-slate-500 uppercase tracking-widest font-mono backdrop-blur-sm">
-              {nodes.length} Stations Online
-            </span>
           </div>
+
 
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

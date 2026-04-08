@@ -31,6 +31,8 @@ export interface NodeStatus {
   repo_name?: string
   git_author?: string
   github_username?: string
+  os_platform?: string
+  os_distro?: string
   top_processes?: ProcessInfo[]
   pending_updates?: number
 }
