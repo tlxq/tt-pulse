@@ -21,6 +21,26 @@ const OSIcon = ({ platform, distro }: { platform?: string, distro?: string }) =>
   return <Monitor className="w-4 h-4 text-slate-500" />;
 };
 
+const CustomTooltip = ({ payload, active, label }: any) => {
+  if (!active || !payload) return null;
+  return (
+    <div className="bg-black/80 backdrop-blur-md border border-white/10 p-3 rounded-2xl shadow-2xl ring-1 ring-white/10">
+      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 border-b border-white/5 pb-1">{label}</p>
+      <div className="space-y-1.5">
+        {payload.map((category: any, idx: number) => (
+          <div key={idx} className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: category.color === 'violet' ? '#8b5cf6' : '#ec4899' }} />
+              <span className="text-[10px] font-bold text-slate-300">{category.name}</span>
+            </div>
+            <span className="text-[10px] font-black text-white font-mono">{category.value}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export function NodeCard({ node }: { node: NodeStatus }) {
   const [isMounted, setIsMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -135,6 +155,7 @@ export function NodeCard({ node }: { node: NodeStatus }) {
               showYAxis={false}
               startEndOnly={true}
               curveType="monotone"
+              customTooltip={CustomTooltip}
             />
           ) : (
             <div className="h-full w-full bg-white/5 rounded-3xl animate-pulse flex items-center justify-center">
