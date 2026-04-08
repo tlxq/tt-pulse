@@ -115,6 +115,25 @@ export function NodeCard({ node }: { node: NodeStatus }) {
           </div>
         </Grid>
 
+        {node.recent_commits && node.recent_commits.length > 0 && (
+          <div className="mt-6 border-t border-white/5 pt-4 space-y-3">
+            <Flex justifyContent="start" className="gap-2 text-slate-500 mb-1">
+              <Terminal className="w-3 h-3 text-nebula-accent/70" />
+              <Text className="text-[9px] font-black uppercase tracking-widest">Recent Logs</Text>
+            </Flex>
+            <div className="space-y-2">
+              {node.recent_commits.slice(0, 3).map((commit, idx) => (
+                <div key={idx} className="flex items-start gap-2 group/commit">
+                  <div className="mt-1.5 w-1 h-1 rounded-full bg-nebula-accent/30 group-hover/commit:bg-nebula-accent transition-colors" />
+                  <p className="text-[10px] text-slate-400 font-medium line-clamp-1 group-hover/commit:text-slate-200 transition-colors">
+                    {commit}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <Flex className="mt-6 border-t border-slate-800/30 pt-4 font-sans">
           <Flex justifyContent="start" className={`gap-2 ${isOnline ? 'text-emerald-500' : 'text-slate-500 opacity-50'}`}>
             <Wifi className="w-3 h-3" />

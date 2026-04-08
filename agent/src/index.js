@@ -91,7 +91,7 @@ async function start() {
         console.warn(`[Warn] No AGENT_EMAIL/PASSWORD found. Proceeding as anonymous (Ensure RLS is disabled or public).`);
     }
 
-    console.log(`[TT-Pulse Agent] Monitoring: ${config.nodeName} every ${config.interval / 1000}s`);
+    console.log(`[TT-Pulse Agent] --- 🐆 BENGAL CAT EDITION 🐆 --- Monitoring: ${config.nodeName} every ${config.interval / 1000}s`);
     
     // Initial heartbeat
     await sendHeartbeat();
