@@ -116,6 +116,7 @@ export function NodeCard({ node }: { node: NodeStatus }) {
                       src={`https://github.com/${node.github_username}.png`}
                       alt={node.github_username}
                       fill
+                      sizes="14px"
                       className="object-cover"
                     />
                   </div>
