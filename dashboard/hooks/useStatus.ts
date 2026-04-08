@@ -27,6 +27,8 @@ export interface NodeStatus {
   last_ai_insight?: string
   last_ai_timestamp?: string
   recent_commits?: string[]
+  branch_name?: string
+  git_author?: string
   top_processes?: ProcessInfo[]
   pending_updates?: number
 }
