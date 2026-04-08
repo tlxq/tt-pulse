@@ -64,7 +64,10 @@ const collector = {
         // Aggregate results
         const aggregated = {
             repo_name: results.length === 1 ? results[0].repo_name : `Studio (${results.length} repos)`,
-            branch_name: results.length === 1 ? results[0].branch_name : (results.filter(r => r.git_commits_24h > 0).map(r => `${r.repo_name}:${r.branch_name}`).join(', ') || results[0].branch_name),
+            branch_name: results.length === 1 
+                ? `${results[0].repo_name}:${results[0].branch_name}${results[0].remote_url ? '|' + results[0].remote_url : ''}`
+                : (results.filter(r => r.git_commits_24h > 0).map(r => `${r.repo_name}:${r.branch_name}${r.remote_url ? '|' + r.remote_url : ''}`).join(', ') 
+                   || `${results[0].repo_name}:${results[0].branch_name}${results[0].remote_url ? '|' + results[0].remote_url : ''}`),
             git_author: results[0].git_author,
             github_username: process.env.GITHUB_USERNAME || results[0].git_author,
             git_commits: results.reduce((sum, r) => sum + r.git_commits, 0),
@@ -110,6 +113,9 @@ const collector = {
             // 5. Get repo name
             const repoNameCmd = `git -C "${repoPath}" rev-parse --show-toplevel`;
 
+            // 6. Get remote origin URL (100% accuracy for links)
+            const remoteCmd = `git -C "${repoPath}" remote get-url origin`;
+
             exec(branchCmd, (err0, stdout0) => {
                 const branch = stdout0 && !err0 ? stdout0.trim() : 'unknown';
                 
@@ -126,13 +132,35 @@ const collector = {
                                 const repoFull = stdout4 && !err4 ? stdout4.trim() : repoPath;
                                 const repoName = path.basename(repoFull);
                                 
-                                resolve({
-                                    repo_name: repoName,
-                                    branch_name: branch,
-                                    git_author: author,
-                                    git_commits: count,
-                                    git_commits_24h: count,
-                                    recent_commits_raw: messages
+                                exec(remoteCmd, (err5, stdout5) => {
+                                    let remoteUrl = stdout5 && !err5 ? stdout5.trim() : '';
+                                    
+                                    // Clean up URLs to HTTPS web URLs
+                                    if (remoteUrl) {
+                                        if (remoteUrl.startsWith('git@')) {
+                                            // git@github.com:user/repo.git -> https://github.com/user/repo
+                                            remoteUrl = remoteUrl
+                                                .replace(':', '/')
+                                                .replace('git@', 'https://')
+                                                .replace('.git', '');
+                                        } else if (remoteUrl.startsWith('https://') && remoteUrl.endsWith('.git')) {
+                                            // https://github.com/user/repo.git -> https://github.com/user/repo
+                                            remoteUrl = remoteUrl.slice(0, -4);
+                                        } else if (remoteUrl.includes('github.com') && !remoteUrl.startsWith('http')) {
+                                            // github.com/user/repo -> https://github.com/user/repo
+                                            remoteUrl = 'https://' + remoteUrl.replace('.git', '');
+                                        }
+                                    }
+
+                                    resolve({
+                                        repo_name: repoName,
+                                        branch_name: branch,
+                                        remote_url: remoteUrl,
+                                        git_author: author,
+                                        git_commits: count,
+                                        git_commits_24h: count,
+                                        recent_commits_raw: messages
+                                    });
                                 });
                             });
                         });

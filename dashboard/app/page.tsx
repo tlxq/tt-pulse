@@ -17,6 +17,7 @@ interface DashboardStats {
   activeNodes: number;
   topContributor: string | null;
   activeBranch: string | null;
+  activeBranches: string[];
   latestCommit: string | null;
   commitDistribution: { name: string; commits: number }[];
 }
@@ -46,7 +47,7 @@ export default function Dashboard() {
 
   const getStats = useCallback((currentNodes: NodeStatus[]): DashboardStats => {
     if (currentNodes.length === 0)
-      return { totalCommits: 0, avgCpu: 0, efficiency: '0', activeNodes: 0, topContributor: null, activeBranch: null, latestCommit: null, commitDistribution: [] };
+      return { totalCommits: 0, avgCpu: 0, efficiency: '0', activeNodes: 0, topContributor: null, activeBranch: null, activeBranches: [], latestCommit: null, commitDistribution: [] };
     
     const totalCommits = currentNodes.reduce((acc, n) => acc + (n.git_commits_24h || 0), 0);
     const avgCpu = Math.round(
@@ -65,8 +66,16 @@ export default function Dashboard() {
         ? (topNode.github_username || topNode.git_author || topNode.node_name) 
         : null;
         
-    const activeBranch = topNode && topNode.branch_name ? `${topNode.repo_name || 'project'} / ${topNode.branch_name}` : null;
+    const activeBranch = topNode && topNode.branch_name ? topNode.branch_name : null;
     const latestCommit = topNode?.recent_commits?.[0] || null;
+
+    // Parse active branches into an array for cleaner rendering
+    const activeBranches = activeBranch 
+      ? activeBranch.split(',').map(s => s.trim()).filter(s => s !== 'unknown' && s !== '')
+      : [];
+
+    // Fallback for any legacy use - extract only the branch name (part before |)
+    const cleanActiveBranch = activeBranch ? activeBranch.split(',')[0].split('|')[0] : null;
 
     // Commit Distribution
     const commitDistribution = currentNodes
@@ -74,7 +83,17 @@ export default function Dashboard() {
         .map(n => ({ name: n.node_name, commits: n.git_commits_24h }))
         .sort((a, b) => b.commits - a.commits);
 
-    return { totalCommits, avgCpu, efficiency, activeNodes, topContributor, activeBranch, latestCommit, commitDistribution };
+    return { 
+      totalCommits, 
+      avgCpu, 
+      efficiency, 
+      activeNodes, 
+      topContributor, 
+      activeBranch: cleanActiveBranch, 
+      activeBranches,
+      latestCommit, 
+      commitDistribution 
+    };
   }, []);
 
   const fetchAI = useCallback(
@@ -209,11 +228,31 @@ export default function Dashboard() {
                   </div>
                   
                   <div className="relative z-10 pt-4 border-t border-white/5 mt-auto space-y-4">
-                    <div className="flex items-center justify-between text-[10px]">
-                      <span className="font-black uppercase tracking-widest text-slate-500">Active Branch</span>
-                      <span className={`px-2 py-0.5 rounded-md font-black uppercase tracking-tighter ${stats.activeBranch ? 'bg-nebula-accent/10 border border-nebula-accent/20 text-nebula-accent' : 'bg-white/5 text-slate-600'}`}>
-                        {stats.activeBranch || 'waiting...'}
-                      </span>
+                    <div className="flex items-start justify-between gap-4">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mt-1.5">Active Branches</span>
+                      <div className="flex flex-wrap gap-2 justify-end">
+                        {stats.activeBranches.length > 0 ? (
+                          stats.activeBranches.map((branchInfo, idx) => {
+                            // Format from agent is "repo:branch|url"
+                            const [displayPart, remoteUrl] = branchInfo.split('|');
+                            
+                            return (
+                              <a 
+                                key={idx} 
+                                href={remoteUrl || '#'}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`px-2 py-0.5 rounded-md font-black uppercase tracking-tighter bg-nebula-accent/10 border border-nebula-accent/20 text-nebula-accent text-[9px] shadow-[0_0_10px_rgba(139,92,246,0.1)] transition-all ${remoteUrl ? 'hover:bg-nebula-accent/20 hover:border-nebula-accent/40 hover:scale-105 cursor-pointer' : 'cursor-default opacity-80'}`}
+                                title={remoteUrl ? `Open on GitHub` : 'No remote URL found'}
+                              >
+                                {displayPart}
+                              </a>
+                            );
+                          })
+                        ) : (
+                          <span className="text-[10px] font-bold text-slate-600 italic">waiting...</span>
+                        )}
+                      </div>
                     </div>
 
                     <div className="space-y-1.5">
