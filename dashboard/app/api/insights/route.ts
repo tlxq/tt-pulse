@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getInsight, NodeData } from '@/lib/insights';
+import { getInsight, NodeData, Guardian } from '@/lib/insights';
 import { isNodeOnline } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { nodes, commits } = body as { nodes: { node_name?: string, name?: string, cpu_usage?: number, ram_usage?: number, cpu_temp?: number, last_seen?: string, online?: boolean, git_commits_24h?: number }[], commits: string[] };
+    const { nodes, commits, guardian } = body as { nodes: { node_name?: string, name?: string, cpu_usage?: number, ram_usage?: number, cpu_temp?: number, last_seen?: string, online?: boolean, git_commits_24h?: number }[], commits: string[], guardian?: Guardian };
 
     if (!nodes || !Array.isArray(nodes) || nodes.length === 0) {
       return NextResponse.json({ insight: "The studio is silent. Waiting for the first station to report for duty." });
@@ -26,7 +26,8 @@ export async function POST(req: Request) {
       };
     });
 
-    const insight = getInsight(mappedNodes, commits || []);
+    const activeGuardian: Guardian = guardian === 'gosta' ? 'gosta' : 'texas';
+    const insight = getInsight(mappedNodes, commits || [], activeGuardian);
 
     return NextResponse.json({
       insight,

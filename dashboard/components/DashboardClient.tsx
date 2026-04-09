@@ -51,6 +51,7 @@ export function DashboardClient({ initialNodes, initialInsight, initialAiMetadat
       setLoadingAI(true);
       try {
         const allCommits = currentNodes.flatMap((n) => n.recent_commits || []);
+        const guardian = localStorage.getItem('tt-pulse-guardian') ?? 'texas';
         const res = await fetch('/api/insights', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -58,6 +59,7 @@ export function DashboardClient({ initialNodes, initialInsight, initialAiMetadat
             nodes: currentNodes,
             commits: allCommits.slice(0, 5),
             forceRefresh: force,
+            guardian,
           }),
           cache: 'no-store',
         });
@@ -78,6 +80,10 @@ export function DashboardClient({ initialNodes, initialInsight, initialAiMetadat
     },
     [nodes],
   );
+
+  const handleGuardianChange = useCallback(() => {
+    fetchAI(nodes, true);
+  }, [fetchAI, nodes]);
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
@@ -305,6 +311,7 @@ export function DashboardClient({ initialNodes, initialInsight, initialAiMetadat
                   loading={loadingAI}
                   fallback={aiMetadata.fallback}
                   quotaExceeded={aiMetadata.quotaExceeded}
+                  onGuardianChange={handleGuardianChange}
                 />
               </section>
 

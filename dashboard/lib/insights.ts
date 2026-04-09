@@ -7,7 +7,11 @@ export interface NodeData {
   git_commits_24h?: number;
 }
 
-function getFunnyFact(nodes: NodeData[], commits: string[]) {
+export type Guardian = 'texas' | 'gosta';
+
+// ── Texas (Bengal) — excitable, chaotic energy ───────────────────────────────
+
+function getTexasFunnyFact(nodes: NodeData[], commits: string[]) {
   const totalCpu = nodes.reduce((acc, n) => acc + n.cpu, 0);
   const avgRam = nodes.length > 0 ? Math.round(nodes.reduce((acc, n) => acc + n.ram, 0) / nodes.length) : 0;
   const maxTemp = nodes.length > 0 ? Math.max(...nodes.map(n => n.temp)) : 0;
@@ -51,13 +55,62 @@ const BENGAL_PERSONALITY = {
   ]
 };
 
+// ── Gösta (Devon Rex) — dry, sardonic, dignified ─────────────────────────────
+
+function getGostaFunnyFact(nodes: NodeData[], commits: string[]) {
+  const totalCpu = nodes.reduce((acc, n) => acc + n.cpu, 0);
+  const avgRam = nodes.length > 0 ? Math.round(nodes.reduce((acc, n) => acc + n.ram, 0) / nodes.length) : 0;
+  const maxTemp = nodes.length > 0 ? Math.max(...nodes.map(n => n.temp)) : 0;
+  const totalCommits = commits.length;
+
+  const facts = [
+    `I note that total CPU consumption stands at ${totalCpu}%. Acceptable, I suppose. I've seen higher from humans trying to open a spreadsheet.`,
+    `Average RAM at ${avgRam}%. One could describe this as efficient. I prefer "not embarrassing."`,
+    `${totalCommits} commits. I have catalogued each one from my ledge. You are welcome.`,
+    `Peak temperature: ${maxTemp}°C. I myself maintain a dignified warmth at all times. The machines are merely attempting to keep up.`,
+    `I have conducted a thorough inspection of all metrics. They are, as I suspected, mediocre. Yet somehow... improving.`,
+    `From my vantage point, I observe the studio hums along adequately. I shall refrain from further commentary at this time.`,
+    `The data suggests productivity. I neither confirm nor deny having predicted this outcome from the beginning.`
+  ];
+
+  return facts[Math.floor(Math.random() * facts.length)];
+}
+
+const GOSTA_PERSONALITY = {
+  STRESSED: [
+    "I see {name} is straining at {cpu}% CPU. How... pedestrian. I'll observe from a safe distance.",
+    "Elevated temperatures on {name}. {temp}°C. I disapprove of excess, in all its forms.",
+    "The workload appears substantial. One notes this without particular alarm, merely mild disdain."
+  ],
+  PRODUCTIVE: [
+    "{count} commits. Adequate output. Don't expect me to be impressed — though I may be, marginally.",
+    "Work has been committed. I've noted it from my ledge. You may proceed.",
+    "I see {count} fresh logs. The studio produces. I tolerate the noise, for now."
+  ],
+  IDLE: [
+    "The studio is blessedly quiet. Finally, some decorum. I shall observe from my ledge.",
+    "All metrics at rest. As they should be. I have always said: stillness is underrated.",
+    "Nothing of consequence is happening. This is, broadly speaking, my preference."
+  ],
+  DEGRADED: [
+    "A station has gone dark. Regrettably, {name} has chosen absence. I disapprove.",
+    "{name} is silent. I find this both irritating and unsurprising.",
+    "The perimeter has a gap. I've noted it. Fixing it is, apparently, your responsibility."
+  ]
+};
+
+// ── Shared logic ──────────────────────────────────────────────────────────────
+
 import { FUNNY_FACT_PROBABILITY } from './constants';
 
-export function getInsight(nodes: NodeData[], commits: string[]) {
+export function getInsight(nodes: NodeData[], commits: string[], guardian: Guardian = 'texas') {
   const onlineNodes = nodes.filter(n => n.online);
   const offlineNodes = nodes.filter(n => !n.online);
   const highLoadNode = onlineNodes.find(n => n.cpu > 75 || n.ram > 80 || n.temp > 80);
   const totalCommits = commits.length;
+
+  const personality = guardian === 'gosta' ? GOSTA_PERSONALITY : BENGAL_PERSONALITY;
+  const getFunnyFact = guardian === 'gosta' ? getGostaFunnyFact : getTexasFunnyFact;
 
   // 1/3 chance to show a "Cool Fact" instead of a status report
   if (Math.random() > FUNNY_FACT_PROBABILITY && nodes.length > 0) {
@@ -65,21 +118,22 @@ export function getInsight(nodes: NodeData[], commits: string[]) {
   }
 
   if (offlineNodes.length > 0) {
-    const random = BENGAL_PERSONALITY.DEGRADED[Math.floor(Math.random() * BENGAL_PERSONALITY.DEGRADED.length)];
+    const random = personality.DEGRADED[Math.floor(Math.random() * personality.DEGRADED.length)];
     return random.replace('{name}', offlineNodes[0].name);
   }
 
   if (highLoadNode) {
-    const random = BENGAL_PERSONALITY.STRESSED[Math.floor(Math.random() * BENGAL_PERSONALITY.STRESSED.length)];
-    return random.replace('{name}', highLoadNode.name)
-                 .replace('{cpu}', highLoadNode.cpu.toString())
-                 .replace('{temp}', highLoadNode.temp.toString());
+    const random = personality.STRESSED[Math.floor(Math.random() * personality.STRESSED.length)];
+    return random
+      .replace('{name}', highLoadNode.name)
+      .replace('{cpu}', highLoadNode.cpu.toString())
+      .replace('{temp}', highLoadNode.temp.toString());
   }
 
   if (totalCommits > 0) {
-    const random = BENGAL_PERSONALITY.PRODUCTIVE[Math.floor(Math.random() * BENGAL_PERSONALITY.PRODUCTIVE.length)];
+    const random = personality.PRODUCTIVE[Math.floor(Math.random() * personality.PRODUCTIVE.length)];
     return random.replace('{count}', totalCommits.toString());
   }
 
-  return BENGAL_PERSONALITY.IDLE[Math.floor(Math.random() * BENGAL_PERSONALITY.IDLE.length)];
+  return personality.IDLE[Math.floor(Math.random() * personality.IDLE.length)];
 }

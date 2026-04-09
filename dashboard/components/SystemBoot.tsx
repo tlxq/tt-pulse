@@ -3,15 +3,17 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BengalMascot } from './BengalMascot';
+import { DevonRexMascot } from './DevonRexMascot';
 import { Terminal } from 'lucide-react';
 
 const BOOT_LOGS = [
   "> INITIALIZING NEBULA PROTOCOLS...",
   "> AUTHENTICATING BENGAL GUARDIAN...",
+  "> LOCATING DEVON REX UNIT: GÖSTA...",
   "> CONNECTING TO ACTIVE STATIONS...",
   "> LOADING TELEMETRY ENGINE...",
   "> SYNCHRONIZING GIT REPOSITORIES...",
-  "> BENGAL GUARDIAN ACTIVE: TEXAS ONLINE.",
+  "> TEXAS ONLINE. GÖSTA ONLINE.",
   "> SYSTEM BOOT COMPLETE."
 ];
 
@@ -71,20 +73,29 @@ export function SystemBoot({ onComplete }: { onComplete: () => void }) {
       {/* Background Glow */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(139,92,246,0.1)_0%,transparent_70%)]" />
       
-      {/* Ring Animation */}
-      <div className="relative mb-12">
-        <motion.div 
+      {/* Dual Mascot Ring Animation */}
+      <div className="relative mb-12 flex items-center gap-4">
+        {/* Outer ring spans both mascots */}
+        <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-          className="absolute inset-[-40px] border border-nebula-accent/20 rounded-full border-dashed"
+          className="absolute inset-[-40px] border border-nebula-accent/20 rounded-full border-dashed pointer-events-none"
         />
-        <motion.div 
+        <motion.div
           animate={{ rotate: -360 }}
           transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-          className="absolute inset-[-20px] border border-nebula-accent/10 rounded-full"
+          className="absolute inset-[-20px] border border-nebula-accent/10 rounded-full pointer-events-none"
         />
-        
-        <BengalMascot isHighLoad={progress < 90} />
+
+        <div className="flex flex-col items-center gap-1 relative z-10">
+          <BengalMascot isHighLoad={progress < 90} />
+          <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Texas</span>
+        </div>
+
+        <div className="flex flex-col items-center gap-1 relative z-10">
+          <DevonRexMascot isHighLoad={progress < 70} />
+          <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Gösta</span>
+        </div>
       </div>
 
       {/* Boot Logs Terminal */}
@@ -117,7 +128,7 @@ export function SystemBoot({ onComplete }: { onComplete: () => void }) {
           <div className="space-y-1">
             <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">System Status</span>
             <span className="text-xs font-black text-white uppercase italic tracking-tighter">
-              {progress < 100 ? 'Initialising Bengal Protocols...' : 'Guardian Active'}
+              {progress < 100 ? 'Initialising Guardian Protocols...' : 'Guardians Active'}
             </span>
           </div>
           <span className="text-xl font-black text-nebula-accent font-mono tracking-tighter italic">
