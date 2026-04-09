@@ -29,7 +29,7 @@ export function NodeTerminal({ recentCommits }: NodeTerminalProps) {
           {recentCommits.slice(0, 3).map((commit, idx) => (
             <div key={idx} className="flex items-start gap-3 group/line">
               <span className="text-[9px] text-slate-600 mt-0.5 shrink-0">$</span>
-              <p className="text-[10px] text-emerald-400/90 leading-relaxed line-clamp-2 selection:bg-emerald-500/30">
+              <p className="text-[10px] text-emerald-400/90 leading-relaxed line-clamp-1 selection:bg-emerald-500/30">
                 {commit}
                 {idx === 0 && <span className="inline-block w-1.5 h-3 ml-1 bg-emerald-500/50 animate-pulse align-middle" />}
               </p>

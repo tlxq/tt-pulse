@@ -20,6 +20,14 @@ export function SystemBoot({ onComplete }: { onComplete: () => void }) {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onComplete();
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [onComplete]);
+
+  useEffect(() => {
     // Progress interval
     const progressTimer = setInterval(() => {
       setProgress(prev => {
@@ -50,12 +58,16 @@ export function SystemBoot({ onComplete }: { onComplete: () => void }) {
   }, [onComplete]);
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, scale: 1.1 }}
-      className="fixed inset-0 z-[100] bg-nebula-950 flex flex-col items-center justify-center p-6 overflow-hidden"
+      onClick={onComplete}
+      className="fixed inset-0 z-[100] bg-nebula-950 flex flex-col items-center justify-center p-6 overflow-hidden cursor-pointer"
     >
+      <p className="absolute top-6 right-6 text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] select-none">
+        Click or ESC to skip
+      </p>
       {/* Background Glow */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(139,92,246,0.1)_0%,transparent_70%)]" />
       

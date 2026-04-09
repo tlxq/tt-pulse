@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getInsight, NodeData } from '@/lib/insights';
+import { isNodeOnline } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +15,7 @@ export async function POST(req: Request) {
 
     const mappedNodes: NodeData[] = nodes.map((n) => {
       const lastSeen = n.last_seen ? new Date(n.last_seen).getTime() : 0;
-      const isOnline = lastSeen ? (Date.now() - lastSeen) / 60000 < 10 : false;
+      const isOnline = lastSeen ? isNodeOnline(new Date(lastSeen)) : false;
       return {
         name: n.node_name || n.name || 'unknown',
         cpu: n.cpu_usage ?? 0,
@@ -29,13 +30,15 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       insight,
-      local: true,
-      mascot: 'Bengal'
+      fallback: false,
+      quotaExceeded: false,
     });
   } catch (error) {
     console.error('[API Error] Insights failed:', error);
     return NextResponse.json({
-      insight: "My whiskers are tingling... something's not right with the studio data."
+      insight: "My whiskers are tingling... something's not right with the studio data.",
+      fallback: true,
+      quotaExceeded: false,
     });
   }
 }

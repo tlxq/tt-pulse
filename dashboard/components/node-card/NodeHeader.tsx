@@ -3,6 +3,7 @@
 import { Apple, Monitor, Wifi } from "lucide-react";
 import { Title } from "@tremor/react";
 import Image from "next/image";
+import { useState } from "react";
 
 export const OSIcon = ({ platform, distro }: { platform?: string, distro?: string }) => {
   const p = platform?.toLowerCase() || '';
@@ -28,6 +29,8 @@ interface NodeHeaderProps {
 }
 
 export function NodeHeader({ nodeName, osPlatform, osDistro, latencyMs, isOnline, githubUsername }: NodeHeaderProps) {
+  const [avatarError, setAvatarError] = useState(false);
+
   return (
     <div className="flex items-start justify-between mb-6 relative z-10 p-2">
       <div className="space-y-3">
@@ -36,8 +39,12 @@ export function NodeHeader({ nodeName, osPlatform, osDistro, latencyMs, isOnline
             <OSIcon platform={osPlatform} distro={osDistro} />
           </div>
           <div className="flex flex-col">
-            <Title className={`font-black tracking-tight font-sans text-2xl leading-none ${isOnline ? 'text-white' : 'text-slate-400'}`}>{nodeName}</Title>
-            <div className={`flex items-center gap-1.5 mt-2 ${isOnline ? 'text-emerald-400' : 'text-slate-600'}`}>
+            <Title className={`font-black tracking-tight font-sans text-2xl leading-none truncate max-w-[150px] ${isOnline ? 'text-white' : 'text-slate-400'}`}>{nodeName}</Title>
+            <div className={`flex items-center gap-1.5 mt-2 ${isOnline
+                ? (latencyMs || 0) > 100 ? 'text-rose-400'
+                  : (latencyMs || 0) > 20 ? 'text-amber-400'
+                  : 'text-emerald-400'
+                : 'text-slate-600'}`}>
               <Wifi className="w-3.5 h-3.5" />
               <span className="text-[11px] font-black font-mono tracking-tighter italic">{latencyMs || 0}ms</span>
             </div>
@@ -54,15 +61,18 @@ export function NodeHeader({ nodeName, osPlatform, osDistro, latencyMs, isOnline
           
           {githubUsername && (
             <div className="flex items-center gap-2 px-2 py-0.5 rounded-full bg-nebula-accent/10 border border-nebula-accent/20">
-              <div className="relative w-3.5 h-3.5 rounded-full overflow-hidden border border-nebula-accent/30 bg-black/20">
-                <Image 
-                  src={`https://github.com/${githubUsername}.png`}
-                  alt={githubUsername}
-                  fill
-                  sizes="14px"
-                  className="object-cover"
-                />
-              </div>
+              {!avatarError && (
+                <div className="relative w-3.5 h-3.5 rounded-full overflow-hidden border border-nebula-accent/30 bg-black/20">
+                  <Image
+                    src={`https://github.com/${githubUsername}.png`}
+                    alt={githubUsername}
+                    fill
+                    sizes="14px"
+                    className="object-cover"
+                    onError={() => setAvatarError(true)}
+                  />
+                </div>
+              )}
               <span className="text-[8px] font-black text-nebula-accent uppercase italic">{githubUsername}</span>
             </div>
           )}

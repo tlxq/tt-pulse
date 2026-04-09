@@ -28,7 +28,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="sv" className="dark">
+    <html lang="en" className="dark">
       <body className={`${inter.className} bg-nebula-950 text-slate-200 antialiased selection:bg-nebula-accent/30`}>
         {children}
       </body>

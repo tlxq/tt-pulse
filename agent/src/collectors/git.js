@@ -1,17 +1,20 @@
 const { exec } = require('child_process');
+const { promisify } = require('util');
 const path = require('path');
 const fs = require('fs');
+
+const execAsync = promisify(exec);
 
 const collector = {
     name: 'git_status',
     async collect(config) {
         let repoPaths = [];
-        
+
         // 1. GIT_REPO_PATH (can be a comma-separated list of absolute or relative paths)
         if (process.env.GIT_REPO_PATH) {
             repoPaths = process.env.GIT_REPO_PATH.split(',').map(p => path.resolve(process.cwd(), p.trim()));
         }
-        
+
         // 2. GIT_PARENT_PATH (a directory containing multiple repos, e.g., ~/.1repos/dev)
         if (process.env.GIT_PARENT_PATH) {
             let parentPath = process.env.GIT_PARENT_PATH;
@@ -58,19 +61,18 @@ const collector = {
         }
 
         console.log(`[Git] Probing ${repoPaths.length} repositories: ${repoPaths.map(p => path.basename(p)).join(', ')}`);
-        
+
         const results = await Promise.all(repoPaths.map(p => this.collectLocal(p, config)));
-        
+
         // Aggregate results
         const aggregated = {
             repo_name: results.length === 1 ? results[0].repo_name : `Studio (${results.length} repos)`,
-            branch_name: results.length === 1 
+            branch_name: results.length === 1
                 ? `${results[0].repo_name}:${results[0].branch_name}${results[0].remote_url ? '|' + results[0].remote_url : ''}`
-                : (results.filter(r => r.git_commits_24h > 0).map(r => `${r.repo_name}:${r.branch_name}${r.remote_url ? '|' + r.remote_url : ''}`).join(', ') 
+                : (results.filter(r => r.git_commits_24h > 0).map(r => `${r.repo_name}:${r.branch_name}${r.remote_url ? '|' + r.remote_url : ''}`).join(', ')
                    || `${results[0].repo_name}:${results[0].branch_name}${results[0].remote_url ? '|' + results[0].remote_url : ''}`),
             git_author: results[0].git_author,
             github_username: process.env.GITHUB_USERNAME || results[0].git_author,
-            git_commits: results.reduce((sum, r) => sum + r.git_commits, 0),
             git_commits_24h: results.reduce((sum, r) => sum + r.git_commits_24h, 0),
             recent_commits: results.flatMap(r => r.recent_commits_raw.map(msg => ({
                 repo: r.repo_name,
@@ -86,105 +88,96 @@ const collector = {
     },
 
     async collectLocal(repoPath, config) {
-        return new Promise((resolve) => {
-            if (!fs.existsSync(path.join(repoPath, '.git'))) {
-                return resolve({
-                    repo_name: path.basename(repoPath),
-                    branch_name: 'no-git',
-                    git_author: '',
-                    git_commits: 0,
-                    git_commits_24h: 0,
-                    recent_commits_raw: []
-                });
+        if (!fs.existsSync(path.join(repoPath, '.git'))) {
+            return {
+                repo_name: path.basename(repoPath),
+                branch_name: 'no-git',
+                remote_url: '',
+                git_author: '',
+                git_commits_24h: 0,
+                recent_commits_raw: []
+            };
+        }
+
+        try {
+            // 1. Get current branch
+            const { stdout: branchOut } = await execAsync(`git -C "${repoPath}" rev-parse --abbrev-ref HEAD`);
+            const branch = branchOut.trim();
+
+            // 2. Get git author name
+            let author = '';
+            try {
+                const { stdout: authorOut } = await execAsync(`git -C "${repoPath}" config user.name`);
+                author = authorOut.trim();
+            } catch {
+                try {
+                    const { stdout: globalAuthorOut } = await execAsync(`git config --global user.name`);
+                    author = globalAuthorOut.trim();
+                } catch { /* no author found */ }
             }
 
-            // 1. Get current branch name
-            const branchCmd = `git -C "${repoPath}" rev-parse --abbrev-ref HEAD`;
-            
-            // 2. Get git author name (repo specific or global fallback)
-            const authorCmd = `git -C "${repoPath}" config user.name || git config --global user.name`;
+            // 3. Count commits created on this machine in the last 24h via reflog
+            let count = 0;
+            try {
+                const { stdout: countOut } = await execAsync(
+                    `git -C "${repoPath}" reflog --since="24.hours.ago" --pretty=format:"%gs" | grep -E "^commit.*: " | wc -l`
+                );
+                count = parseInt(countOut.trim()) || 0;
+            } catch { /* reflog unavailable */ }
 
-            exec(branchCmd, (err0, stdout0) => {
-                const branch = stdout0 && !err0 ? stdout0.trim() : 'unknown';
-                
-                exec(authorCmd, (err1, stdout1) => {
-                    const author = stdout1 && !err1 ? stdout1.trim() : '';
-                    
-                    // Filter by author to only track commits made on this computer/by this user
-                    const filterAuthor = config.githubUsername || author;
-                    const authorFilter = filterAuthor ? `--author="${filterAuthor}"` : '';
+            // 4. Get recent commit messages via reflog
+            let messages = [];
+            try {
+                const { stdout: recentOut } = await execAsync(
+                    `git -C "${repoPath}" reflog -n 20 --since="24.hours.ago" --pretty=format:"%ct|%gs" | grep -E "[|]commit.*: " | head -n 5`
+                );
+                if (recentOut.trim()) {
+                    messages = recentOut.trim().split('\n')
+                        .filter(m => m)
+                        .map(m => m.replace(/\|commit.*: /, '|'));
+                }
+            } catch { /* reflog unavailable */ }
 
-                    // Use git reflog to identify commits that were actually CREATED on this machine.
-                    // This separates activity between different computers using the same GitHub account.
-                    // We look for "commit:" or "commit (amend):" actions in the local reflog.
+            // 5. Get repo name from top-level path
+            let repoName = path.basename(repoPath);
+            try {
+                const { stdout: repoOut } = await execAsync(`git -C "${repoPath}" rev-parse --show-toplevel`);
+                repoName = path.basename(repoOut.trim());
+            } catch { /* fall back to directory name */ }
 
-                    // 3. Get total commits in the last 24 hours created ON THIS MACHINE
-                    const countCmd = `git -C "${repoPath}" reflog --since="24.hours.ago" --pretty=format:"%gs" | grep -E "^commit.*: " | wc -l`;
-                    
-                    // 4. Get the 5 most recent commit messages created ON THIS MACHINE with timestamp
-                    const recentCmd = `git -C "${repoPath}" reflog -n 20 --since="24.hours.ago" --pretty=format:"%ct|%gs" | grep -E "[|]commit.*: " | head -n 5`;
+            // 6. Get and normalise remote origin URL
+            let remoteUrl = '';
+            try {
+                const { stdout: remoteOut } = await execAsync(`git -C "${repoPath}" remote get-url origin`);
+                remoteUrl = remoteOut.trim();
+                if (remoteUrl.startsWith('git@')) {
+                    remoteUrl = remoteUrl.replace(':', '/').replace('git@', 'https://').replace('.git', '');
+                } else if (remoteUrl.startsWith('https://') && remoteUrl.endsWith('.git')) {
+                    remoteUrl = remoteUrl.slice(0, -4);
+                } else if (remoteUrl.includes('github.com') && !remoteUrl.startsWith('http')) {
+                    remoteUrl = 'https://' + remoteUrl.replace('.git', '');
+                }
+            } catch { /* no remote */ }
 
-                    // 5. Get repo name
-                    const repoNameCmd = `git -C "${repoPath}" rev-parse --show-toplevel`;
-
-                    // 6. Get remote origin URL
-                    const remoteCmd = `git -C "${repoPath}" remote get-url origin`;
-
-                    exec(countCmd, (err2, stdout2) => {
-                        const count = parseInt(stdout2 ? stdout2.trim() : '0') || 0;
-                        
-                        exec(recentCmd, (err3, stdout3) => {
-                            let messages = [];
-                            if (stdout3 && !err3) {
-                                messages = stdout3.trim().split('\n')
-                                    .filter(m => m)
-                                    .map(m => {
-                                        // Format: timestamp|commit: message OR timestamp|commit (amend): message
-                                        // We want to strip the "commit: " prefix for the dashboard
-                                        return m.replace(/\|commit.*: /, '|');
-                                    });
-                            }
-
-                            exec(repoNameCmd, (err4, stdout4) => {
-                                const repoFull = stdout4 && !err4 ? stdout4.trim() : repoPath;
-                                const repoName = path.basename(repoFull);
-                                
-                                exec(remoteCmd, (err5, stdout5) => {
-                                    let remoteUrl = stdout5 && !err5 ? stdout5.trim() : '';
-                                    
-                                    // Clean up URLs to HTTPS web URLs
-                                    if (remoteUrl) {
-                                        if (remoteUrl.startsWith('git@')) {
-                                            // git@github.com:user/repo.git -> https://github.com/user/repo
-                                            remoteUrl = remoteUrl
-                                                .replace(':', '/')
-                                                .replace('git@', 'https://')
-                                                .replace('.git', '');
-                                        } else if (remoteUrl.startsWith('https://') && remoteUrl.endsWith('.git')) {
-                                            // https://github.com/user/repo.git -> https://github.com/user/repo
-                                            remoteUrl = remoteUrl.slice(0, -4);
-                                        } else if (remoteUrl.includes('github.com') && !remoteUrl.startsWith('http')) {
-                                            // github.com/user/repo -> https://github.com/user/repo
-                                            remoteUrl = 'https://' + remoteUrl.replace('.git', '');
-                                        }
-                                    }
-
-                                    resolve({
-                                        repo_name: repoName,
-                                        branch_name: branch,
-                                        remote_url: remoteUrl,
-                                        git_author: author,
-                                        git_commits: count,
-                                        git_commits_24h: count,
-                                        recent_commits_raw: messages
-                                    });
-                                });
-                            });
-                        });
-                    });
-                });
-            });
-        });
+            return {
+                repo_name: repoName,
+                branch_name: branch,
+                remote_url: remoteUrl,
+                git_author: author,
+                git_commits_24h: count,
+                recent_commits_raw: messages
+            };
+        } catch (err) {
+            console.error(`[Git] Failed to collect ${path.basename(repoPath)}: ${err.message}`);
+            return {
+                repo_name: path.basename(repoPath),
+                branch_name: 'error',
+                remote_url: '',
+                git_author: '',
+                git_commits_24h: 0,
+                recent_commits_raw: []
+            };
+        }
     }
 };
 

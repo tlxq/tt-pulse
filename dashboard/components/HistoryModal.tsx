@@ -3,11 +3,7 @@
 import { Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { X, History } from 'lucide-react';
-import { 
-  Flex, 
-  Text, 
-  AreaChart
-} from '@tremor/react';
+import { Flex, Text, AreaChart, type CustomTooltipProps } from '@tremor/react';
 import { HistoryPoint } from '@/types';
 
 interface HistoryModalProps {
@@ -17,16 +13,45 @@ interface HistoryModalProps {
   history: HistoryPoint[];
 }
 
+const SERIES = [
+  { name: 'CPU Usage',   color: 'bg-violet-500', unit: '%' },
+  { name: 'RAM Usage',   color: 'bg-pink-500',   unit: '%' },
+  { name: 'Temperature', color: 'bg-cyan-400',   unit: '°C' },
+] as const;
+
+type SeriesName = typeof SERIES[number]['name'];
+
+function ChartTooltip({ active, payload, label }: CustomTooltipProps) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-nebula-900/95 border border-white/10 rounded-xl p-3 shadow-2xl backdrop-blur-md min-w-[160px]">
+      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{label}</p>
+      {payload.map((entry) => {
+        const name = String(entry.name ?? '');
+        const series = SERIES.find(s => s.name === name);
+        const unit = series?.unit ?? '';
+        return (
+          <div key={name} className="flex items-center gap-2 py-0.5">
+            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: entry.color }} />
+            <span className="text-[11px] text-slate-400 flex-1">{name}</span>
+            <span className="text-[11px] font-black text-white font-mono">{entry.value}{unit}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function HistoryModal({ isOpen, onClose, nodeName, history }: HistoryModalProps) {
   const chartData = (history || []).map(h => ({
-    time: new Intl.DateTimeFormat('sv-SE', {
+    time: new Intl.DateTimeFormat('en-GB', {
       hour: '2-digit',
       minute: '2-digit',
-      hour12: false
+      hour12: false,
     }).format(new Date(h.recorded_at)),
-    "CPU Usage": h.cpu_usage,
-    "RAM Usage": h.ram_usage,
-    "Temperature": h.cpu_temp || 0,
+    'CPU Usage':   h.cpu_usage,
+    'RAM Usage':   h.ram_usage,
+    'Temperature': h.cpu_temp || 0,
   }));
 
   return (
@@ -61,27 +86,39 @@ export function HistoryModal({ isOpen, onClose, nodeName, history }: HistoryModa
                     <History className="w-5 h-5 text-nebula-accent" />
                     Historical Trends (24h)
                   </Dialog.Title>
-                  <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
+                  <button onClick={onClose} aria-label="Close" className="text-slate-500 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nebula-accent rounded-md">
                     <X className="w-5 h-5" />
                   </button>
                 </Flex>
-                
-                <Text className="text-slate-400 text-xs mb-8 font-bold tracking-wide">
-                  Historical telemetry for <span className="text-nebula-accent font-mono">{nodeName}</span>.
-                </Text>
 
-                <div className="h-64 w-full mt-4">
+                <div className="flex items-center justify-between mb-6">
+                  <Text className="text-slate-400 text-xs font-bold tracking-wide">
+                    Telemetry for <span className="text-nebula-accent font-mono">{nodeName}</span>
+                  </Text>
+                  {/* Custom legend — replaces Tremor's broken built-in legend */}
+                  <div className="flex items-center gap-4">
+                    {SERIES.map(s => (
+                      <div key={s.name} className="flex items-center gap-1.5">
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${s.color}`} />
+                        <span className="text-[10px] font-bold text-slate-400">{s.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="h-64 w-full">
                   {chartData.length > 0 ? (
                     <AreaChart
                       className="h-full"
                       data={chartData}
                       index="time"
-                      categories={["CPU Usage", "RAM Usage", "Temperature"]}
-                      colors={["violet", "pink", "cyan"]}
-                      showLegend={true}
+                      categories={['CPU Usage', 'RAM Usage', 'Temperature'] as SeriesName[]}
+                      colors={['violet', 'pink', 'cyan']}
+                      showLegend={false}
                       showGridLines={true}
-                      yAxisWidth={40}
+                      yAxisWidth={36}
                       curveType="monotone"
+                      customTooltip={ChartTooltip}
                     />
                   ) : (
                     <div className="h-full w-full flex items-center justify-center border border-white/5 rounded-xl bg-white/5">

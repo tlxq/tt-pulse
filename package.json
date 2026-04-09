@@ -9,6 +9,8 @@
     "dev": "npm run dev -w dashboard",
     "agent": "npm run start -w agent",
     "dev:all": "concurrently \"npm run dev -w dashboard\" \"npm run start -w agent\"",
+    "check": "npm run tsc -w dashboard && npm run lint -w dashboard",
+    "check:fix": "npm run lint -w dashboard -- --fix",
     "clean": "rm -rf node_modules dashboard/node_modules agent/node_modules dashboard/package-lock.json agent/package-lock.json package-lock.json",
     "reinstall": "npm run clean && npm install"
   },

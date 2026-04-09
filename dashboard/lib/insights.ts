@@ -51,6 +51,8 @@ const BENGAL_PERSONALITY = {
   ]
 };
 
+import { FUNNY_FACT_PROBABILITY } from './constants';
+
 export function getInsight(nodes: NodeData[], commits: string[]) {
   const onlineNodes = nodes.filter(n => n.online);
   const offlineNodes = nodes.filter(n => !n.online);
@@ -58,7 +60,7 @@ export function getInsight(nodes: NodeData[], commits: string[]) {
   const totalCommits = commits.length;
 
   // 1/3 chance to show a "Cool Fact" instead of a status report
-  if (Math.random() > 0.66 && nodes.length > 0) {
+  if (Math.random() > FUNNY_FACT_PROBABILITY && nodes.length > 0) {
     return getFunnyFact(nodes, commits);
   }
 

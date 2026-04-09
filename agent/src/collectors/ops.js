@@ -8,7 +8,7 @@ module.exports = {
             // ps aux --sort=-%cpu | head -n 4 gets the header + top 3 processes
             exec('ps aux --sort=-%cpu | head -n 4', (error, stdout) => {
                 if (error) {
-                    console.error(`[Ops] Error executing ps: ${error.message}`);
+                    console.warn(`[Ops] Failed to read top processes: ${error.message}`);
                     return resolve({ top_processes: [] });
                 }
 

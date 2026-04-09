@@ -13,7 +13,7 @@ import { SystemBoot } from '@/components/SystemBoot';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function DashboardClient({ initialNodes, initialInsight, initialAiMetadata }: { initialNodes: NodeStatus[], initialInsight: string, initialAiMetadata: AiMetadata }) {
-  const { nodes: liveNodes, loading, refresh } = useStatus();
+  const { nodes: liveNodes, loading, error: statusError, refresh } = useStatus();
   
   // Use initial data if live data is still loading
   const nodes = liveNodes.length > 0 ? liveNodes : initialNodes;
@@ -144,6 +144,7 @@ export function DashboardClient({ initialNodes, initialInsight, initialAiMetadat
                   <button
                     onClick={handleManualRefresh}
                     disabled={isRefreshing || loadingAI}
+                    aria-label="Refresh dashboard"
                     className="p-2.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all active:scale-95 group disabled:opacity-50 backdrop-blur-md"
                   >
                     <RefreshCcw
@@ -152,6 +153,14 @@ export function DashboardClient({ initialNodes, initialInsight, initialAiMetadat
                   </button>
                 </div>
               </header>
+
+              {/* Connection Error Banner */}
+              {statusError && (
+                <div role="alert" className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-bold">
+                  <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0 animate-pulse" />
+                  Connection error: {statusError}
+                </div>
+              )}
 
               {/* Global Stats Grid */}
               <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -185,7 +194,7 @@ export function DashboardClient({ initialNodes, initialInsight, initialAiMetadat
                                 href={remoteUrl || '#'}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className={`px-2 py-0.5 rounded-md font-black uppercase tracking-tighter bg-nebula-accent/10 border border-nebula-accent/20 text-nebula-accent text-[9px] shadow-[0_0_10px_rgba(139,92,246,0.1)] transition-all ${remoteUrl ? 'hover:bg-nebula-accent/20 hover:border-nebula-accent/40 hover:scale-105 cursor-pointer' : 'cursor-default opacity-80'}`}
+                                className={`px-2 py-0.5 rounded-md font-bold tracking-tight bg-nebula-accent/10 border border-nebula-accent/20 text-nebula-accent text-[9px] shadow-[0_0_10px_rgba(139,92,246,0.1)] transition-all font-mono ${remoteUrl ? 'hover:bg-nebula-accent/20 hover:border-nebula-accent/40 hover:scale-105 cursor-pointer' : 'cursor-default opacity-80'}`}
                                 title={remoteUrl ? `Open on GitHub` : 'No remote URL found'}
                               >
                                 {displayPart}
@@ -203,22 +212,6 @@ export function DashboardClient({ initialNodes, initialInsight, initialAiMetadat
                       <p className={`text-[10px] font-medium leading-relaxed italic line-clamp-1 ${stats.latestCommit ? 'text-slate-300' : 'text-slate-600'}`}>
                         {stats.latestCommit ? `"${stats.latestCommit}"` : 'No recent logs detected in this session.'}
                       </p>
-                    </div>
-
-                    <div className="pt-3 border-t border-white/5">
-                       <div className="flex flex-wrap gap-4">
-                         {stats.commitDistribution.length > 0 ? (
-                           stats.commitDistribution.map((dist, idx) => (
-                             <div key={idx} className="flex items-center gap-1.5">
-                               <div className="w-1 h-1 rounded-full bg-nebula-accent" />
-                               <span className="text-[10px] font-bold text-slate-400">{dist.name}:</span>
-                               <span className="text-[10px] font-black text-white font-mono">{dist.commits}</span>
-                             </div>
-                           ))
-                         ) : (
-                           <span className="text-[10px] font-bold text-slate-600 italic">Distribution pending...</span>
-                         )}
-                       </div>
                     </div>
                   </div>
                   
@@ -241,12 +234,12 @@ export function DashboardClient({ initialNodes, initialInsight, initialAiMetadat
                         {stats.efficiency}
                       </span>
                       <span className="text-nebula-accent font-bold text-sm italic uppercase tracking-widest">
-                        Score
+                        avg/station
                       </span>
                     </div>
                   </div>
 
-                    <div className="pt-4 border-t border-white/5 mt-auto space-y-4">
+                  <div className="pt-4 border-t border-white/5 mt-auto space-y-4">
                     <div className="flex items-center justify-between group/contributor">
                       <div className="space-y-1.5">
                         <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Top Contributor</span>
@@ -254,7 +247,7 @@ export function DashboardClient({ initialNodes, initialInsight, initialAiMetadat
                           {stats.topContributor ? (
                             <>
                               <div className="relative w-8 h-8 rounded-full overflow-hidden border-2 border-nebula-accent/50 shadow-[0_0_10px_rgba(139,92,246,0.3)] bg-black/20">
-                                <Image 
+                                <Image
                                   src={`https://github.com/${stats.topContributor}.png`}
                                   alt={stats.topContributor}
                                   fill
@@ -274,16 +267,32 @@ export function DashboardClient({ initialNodes, initialInsight, initialAiMetadat
                       </div>
                     </div>
 
+                    <div className="pt-3 border-t border-white/5">
+                      <div className="flex flex-wrap gap-4">
+                        {stats.commitDistribution.length > 0 ? (
+                          stats.commitDistribution.map((dist, idx) => (
+                            <div key={idx} className="flex items-center gap-1.5">
+                              <div className="w-1 h-1 rounded-full bg-nebula-accent" />
+                              <span className="text-[10px] font-bold text-slate-400">{dist.name}:</span>
+                              <span className="text-[10px] font-black text-white font-mono">{dist.commits}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <span className="text-[10px] font-bold text-slate-600 italic">Distribution pending...</span>
+                        )}
+                      </div>
+                    </div>
+
                     <div className="pt-4 border-t border-white/5 flex items-center justify-between">
-                       <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Momentum Trend</span>
-                       <div className="flex gap-1">
-                          {[1, 2, 3, 4, 5].map((i) => (
-                            <div 
-                              key={i} 
-                              className={`w-1.5 h-3 rounded-sm transition-all ${i <= (parseFloat(stats.efficiency) * 10) ? 'bg-nebula-accent shadow-[0_0_5px_rgba(139,92,246,0.5)]' : 'bg-white/5'}`} 
-                            />
-                          ))}
-                       </div>
+                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Momentum Trend</span>
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <div
+                            key={i}
+                            className={`w-1.5 h-3 rounded-sm transition-all ${i <= Math.ceil(parseInt(stats.efficiency) / 2) ? 'bg-nebula-accent shadow-[0_0_5px_rgba(139,92,246,0.5)]' : 'bg-white/5'}`}
+                          />
+                        ))}
+                      </div>
                     </div>
                   </div>
 
@@ -310,15 +319,32 @@ export function DashboardClient({ initialNodes, initialInsight, initialAiMetadat
                 </div>
 
                 {loading && nodes.length === 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {[1, 2, 3, 4].map((i) => (
                       <NodeCardSkeleton key={i} />
                     ))}
                   </div>
+                ) : !loading && nodes.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-slate-500">
+                      <LayoutGrid className="w-8 h-8" />
+                    </div>
+                    <p className="text-sm font-black text-slate-400 uppercase tracking-widest">No stations reporting</p>
+                    <p className="text-xs text-slate-600 font-medium max-w-xs">
+                      Start the agent on a machine to begin monitoring. Run <code className="text-nebula-accent font-mono">npm run start</code> inside the <code className="text-nebula-accent font-mono">agent/</code> directory.
+                    </p>
+                  </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                    {nodes.map((node) => (
-                      <NodeCard key={node.node_name} node={node} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {nodes.map((node, index) => (
+                      <motion.div
+                        key={node.node_name}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, delay: index * 0.08, ease: "easeOut" }}
+                      >
+                        <NodeCard node={node} />
+                      </motion.div>
                     ))}
                   </div>
                 )}

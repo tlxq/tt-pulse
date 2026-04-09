@@ -14,7 +14,6 @@ module.exports = {
             ram_usage: Math.round((mem.active / mem.total) * 100),
             os_platform: os.platform,
             os_distro: os.distro,
-            os_kernel: os.kernel
         };
     }
 };

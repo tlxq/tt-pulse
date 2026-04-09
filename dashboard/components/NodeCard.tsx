@@ -3,7 +3,7 @@
 import { NodeStatus } from "@/types";
 import { useEffect, useState, Fragment } from "react";
 import { HistoryModal } from "./HistoryModal";
-import { getRelativeTime } from "@/lib/utils";
+import { getRelativeTime, isNodeOnline } from "@/lib/utils";
 import { Card } from "@tremor/react";
 import { History } from "lucide-react";
 import { NodeHeader } from "./node-card/NodeHeader";
@@ -23,13 +23,8 @@ export function NodeCard({ node }: { node: NodeStatus }) {
     return () => clearTimeout(timer);
   }, []);
 
-  useEffect(() => { 
-    const checkOnline = () => {
-      const lastSeenDate = new Date(node.last_seen);
-      const diffMinutes = (Date.now() - lastSeenDate.getTime()) / 60000;
-      setIsOnline(diffMinutes < 15);
-    };
-
+  useEffect(() => {
+    const checkOnline = () => setIsOnline(isNodeOnline(node.last_seen));
     checkOnline();
     const interval = setInterval(checkOnline, 30000);
     return () => clearInterval(interval);
@@ -62,41 +57,45 @@ export function NodeCard({ node }: { node: NodeStatus }) {
           />
 
           <div className="flex flex-col items-end gap-3 p-4">
-            <button 
+            <button
               onClick={() => setIsOpen(true)}
+              aria-label="View historical trends"
               className="p-2.5 rounded-2xl bg-white/5 border border-white/10 text-slate-500 hover:text-nebula-accent hover:border-nebula-accent/30 hover:bg-nebula-accent/5 transition-all active:scale-90"
-              title="View Historical Trends"
             >
               <History className="w-4 h-4" />
             </button>
             {!isOnline && (
-              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tight italic">
+              <time
+                dateTime={node.last_seen}
+                title={new Date(node.last_seen).toLocaleString()}
+                className="text-[9px] font-bold text-slate-500 uppercase tracking-tight italic cursor-default"
+              >
                 Seen {getRelativeTime(node.last_seen)}
-              </span>
+              </time>
             )}
           </div>
         </div>
 
-        <NodeGraph 
-          history={node.history || []}
-          isMounted={isMounted}
-        />
+        {isOnline && (
+          <NodeGraph
+            history={node.history || []}
+            isMounted={isMounted}
+          />
+        )}
 
-        <NodeMetrics 
+        <NodeMetrics
           cpuUsage={node.cpu_usage}
           ramUsage={node.ram_usage}
           cpuTemp={node.cpu_temp}
           diskUsagePercent={node.disk_usage_percent}
           onViewHistory={() => setIsOpen(true)}
+          history={node.history}
         />
 
         <NodeTerminal 
           recentCommits={node.recent_commits}
         />
 
-        <div className="mt-8 border-t border-white/5 pt-6 text-[10px] font-bold text-slate-600 uppercase tracking-tighter italic relative z-10">
-          Sync status: Verified
-        </div>
       </Card>
 
       <HistoryModal 

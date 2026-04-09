@@ -1,44 +1,36 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { NodeStatus, HistoryPoint } from '@/types'
+import { NodeStatus } from '@/types'
+import { fetchNodeHistory } from '@/lib/history'
 
 export function useStatus() {
   const [nodes, setNodes] = useState<NodeStatus[]>([])
   const [loading, setLoading] = useState(true)
-
-  const fetchHistory = useCallback(async (nodeName: string): Promise<HistoryPoint[]> => {
-    const { data, error } = await supabase
-      .from('node_history')
-      .select('cpu_usage, ram_usage, cpu_temp, recorded_at')
-      .eq('node_name', nodeName)
-      .order('recorded_at', { ascending: false })
-      .limit(20)
-
-    if (error || !data) return []
-    return data.reverse()
-  }, [])
+  const [error, setError] = useState<string | null>(null)
 
   const fetchStatus = useCallback(async () => {
-    const { data, error } = await supabase
+    const { data, error: fetchError } = await supabase
       .from('node_status')
       .select('*')
       .order('node_name')
 
-    if (!error && data) {
+    if (!fetchError && data) {
       // Parallel fetch history for all nodes
       const nodesWithHistory = await Promise.all(
         data.map(async (node) => ({
           ...node,
-          history: await fetchHistory(node.node_name)
+          history: await fetchNodeHistory(node.node_name),
         }))
       )
       setNodes(nodesWithHistory)
+      setError(null)
       setLoading(false)
       return nodesWithHistory
     }
+    setError(fetchError?.message ?? 'Failed to connect to Supabase.')
     setLoading(false)
     return []
-  }, [fetchHistory])
+  }, [])
 
   useEffect(() => {
     const init = async () => {
@@ -59,7 +51,7 @@ export function useStatus() {
         async (payload) => {
           if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
             const newNode = payload.new as NodeStatus
-            const history = await fetchHistory(newNode.node_name)
+            const history = await fetchNodeHistory(newNode.node_name)
             
             setNodes(prev => prev.map(n => 
               n.node_name === newNode.node_name ? { ...newNode, history } : n
@@ -74,7 +66,7 @@ export function useStatus() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [fetchStatus, fetchHistory])
+  }, [fetchStatus])
 
-  return { nodes, loading, refresh: fetchStatus }
+  return { nodes, loading, error, refresh: fetchStatus }
 }

@@ -9,6 +9,7 @@ module.exports = {
             const rootFs = fs.find(f => f.mount === '/') || fs[0];
             return { disk_usage_percent: Math.round(rootFs.use) };
         } catch (e) {
+            console.warn(`[Storage] Failed to read disk usage: ${e.message}`);
             return { disk_usage_percent: 0 };
         }
     }

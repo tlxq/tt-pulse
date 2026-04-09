@@ -8,6 +8,7 @@ module.exports = {
             const ms = await si.inetLatency('8.8.8.8');
             return { latency_ms: Math.round(ms) };
         } catch (e) {
+            console.warn(`[Network] Failed to measure latency: ${e.message}`);
             return { latency_ms: 0 };
         }
     }

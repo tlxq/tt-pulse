@@ -1,4 +1,5 @@
 import { NodeStatus, DashboardStats } from "@/types";
+import { isNodeOnline } from "@/lib/utils";
 
 export function getStats(currentNodes: NodeStatus[]): DashboardStats {
   if (currentNodes.length === 0) {
@@ -22,11 +23,10 @@ export function getStats(currentNodes: NodeStatus[]): DashboardStats {
   const avgCpu = Math.round(
     currentNodes.reduce((acc, n) => acc + n.cpu_usage, 0) / currentNodes.length
   );
-  const activeNodes = currentNodes.filter(
-    (n) => Date.now() - new Date(n.last_seen).getTime() < 10 * 60 * 1000
-  ).length;
-  const efficiency =
-    avgCpu > 0 ? (totalCommits / avgCpu).toFixed(2) : totalCommits.toString();
+  const activeNodes = currentNodes.filter((n) => isNodeOnline(n.last_seen)).length;
+  const efficiency = Math.round(
+    totalCommits / Math.max(currentNodes.length, 1)
+  ).toString();
 
   // Top Contributor & Branch detection
   const topNode = [...currentNodes].sort(
