@@ -1,9 +1,9 @@
 'use client';
 import { NodeStatus } from "@/hooks/useStatus";
 import { Card, AreaChart, Title, Flex, CustomTooltipProps } from "@tremor/react";
-import { Cpu, HardDrive, Database, Activity, Terminal, Monitor, Apple, Wifi } from "lucide-react";
+import { Cpu, HardDrive, Database, Activity, Terminal, Monitor, Apple, Wifi, Thermometer, History } from "lucide-react";
 import { useEffect, useState, Fragment } from "react";
-import { ProcessModal } from "./ProcessModal";
+import { HistoryModal } from "./HistoryModal";
 import { getRelativeTime } from "@/lib/utils";
 import Image from "next/image";
 
@@ -27,15 +27,26 @@ const CustomTooltip = ({ payload, active, label }: CustomTooltipProps) => {
     <div className="bg-black/80 backdrop-blur-md border border-white/10 p-3 rounded-2xl shadow-2xl ring-1 ring-white/10">
       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 border-b border-white/5 pb-1">{label}</p>
       <div className="space-y-1.5">
-        {payload.map((category, idx: number) => (
-          <div key={idx} className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: (category.color || 'violet') === 'violet' ? '#8b5cf6' : '#ec4899' }} />
-              <span className="text-[10px] font-bold text-slate-300">{category.name}</span>
+        {payload.map((category, idx: number) => {
+          const isTemp = category.name === "Temperature";
+          const unit = isTemp ? "°C" : "%";
+          
+          // Map Tremor colors to our Nebula palette
+          let color = '#8b5cf6'; // violet (default)
+          if (category.color === 'pink') color = '#ec4899';
+          if (category.color === 'cyan') color = '#06b6d4';
+          if (category.color === 'rose') color = '#f43f5e';
+
+          return (
+            <div key={idx} className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
+                <span className="text-[10px] font-bold text-slate-300">{category.name}</span>
+              </div>
+              <span className="text-[10px] font-black text-white font-mono">{category.value}{unit}</span>
             </div>
-            <span className="text-[10px] font-black text-white font-mono">{category.value}%</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -72,6 +83,7 @@ export function NodeCard({ node }: { node: NodeStatus }) {
     }).format(new Date(h.recorded_at)),
     "CPU Usage": h.cpu_usage,
     "RAM Usage": h.ram_usage,
+    "Temperature": h.cpu_temp || 0,
   }));
 
   return (
@@ -134,9 +146,9 @@ export function NodeCard({ node }: { node: NodeStatus }) {
             <button 
               onClick={() => setIsOpen(true)}
               className="p-2.5 rounded-2xl bg-white/5 border border-white/10 text-slate-500 hover:text-nebula-accent hover:border-nebula-accent/30 hover:bg-nebula-accent/5 transition-all active:scale-90"
-              title="Open Process Monitor"
+              title="View Historical Trends"
             >
-              <Terminal className="w-4 h-4" />
+              <History className="w-4 h-4" />
             </button>
             {!isOnline && (
               <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tight italic">
@@ -152,8 +164,8 @@ export function NodeCard({ node }: { node: NodeStatus }) {
               className="h-full"
               data={chartData}
               index="time"
-              categories={["CPU Usage", "RAM Usage"]}
-              colors={["violet", "pink"]}
+              categories={["CPU Usage", "RAM Usage", "Temperature"]}
+              colors={["violet", "pink", "cyan"]}
               showLegend={false}
               showGridLines={false}
               showXAxis={false}
@@ -185,6 +197,16 @@ export function NodeCard({ node }: { node: NodeStatus }) {
                 <span className="text-[9px] font-black uppercase tracking-widest">RAM</span>
               </div>
               <div className="text-sm font-black text-white font-mono">{node.ram_usage}%</div>
+            </div>
+
+            <div className="flex-1 space-y-1">
+              <div className="flex items-center gap-1.5 text-slate-500">
+                <Thermometer className="w-3 h-3" />
+                <span className="text-[9px] font-black uppercase tracking-widest">TEMP</span>
+              </div>
+              <div className={`text-sm font-black font-mono ${(node.cpu_temp || 0) > 80 ? 'text-rose-500' : 'text-white'}`}>
+                {node.cpu_temp || 0}°C
+              </div>
             </div>
             
             <div className="flex-1 space-y-1 text-right">
@@ -235,11 +257,11 @@ export function NodeCard({ node }: { node: NodeStatus }) {
         </div>
       </Card>
 
-      <ProcessModal 
+      <HistoryModal 
         isOpen={isOpen} 
         onClose={() => setIsOpen(false)} 
         nodeName={node.node_name} 
-        processes={node.top_processes || []} 
+        history={node.history || []} 
       />
     </Fragment>
   );

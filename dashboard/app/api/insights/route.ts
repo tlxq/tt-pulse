@@ -6,6 +6,7 @@ interface NodeData {
   name: string;
   cpu: number;
   ram: number;
+  temp: number;
   online: boolean;
   git_commits_24h?: number;
 }
@@ -13,6 +14,7 @@ interface NodeData {
 function getFunnyFact(nodes: NodeData[], commits: string[]) {
   const totalCpu = nodes.reduce((acc, n) => acc + n.cpu, 0);
   const avgRam = nodes.length > 0 ? Math.round(nodes.reduce((acc, n) => acc + n.ram, 0) / nodes.length) : 0;
+  const maxTemp = nodes.length > 0 ? Math.max(...nodes.map(n => n.temp)) : 0;
   const totalCommits = commits.length;
   const highLoadNode = nodes.find(n => n.cpu > 70);
   const mostCommits = Math.max(...nodes.map(n => n.git_commits_24h || 0));
@@ -23,7 +25,7 @@ function getFunnyFact(nodes: NodeData[], commits: string[]) {
     `Hustle report: ${totalCommits} conquests recently. If code were coffee, we'd be vibrating at a cellular level by now.`,
     `Mascot observation: ${highLoadNode ? highLoadNode.name : 'The cluster'} is purring quite loudly. I suspect some heavy-duty math is happening.`,
     `Efficiency check: With ${mostCommits} logs on our top station, we're out-pacing a caffeinated squirrel on a deadline.`,
-    `Thermal update: The workstations are radiating enough heat to keep my Bengal paws warm all winter. Keep grinding!`,
+    `Thermal update: We've hit ${maxTemp}°C on our hottest node. Radiating enough heat to keep my Bengal paws warm all winter!`,
     `Network whisper: Our latency is so low, I can practically see the bits moving before they even decide where to go.`
   ];
 
@@ -32,9 +34,9 @@ function getFunnyFact(nodes: NodeData[], commits: string[]) {
 
 const BENGAL_PERSONALITY = {
   STRESSED: [
-    "Hiss! Someone's pouncing on those tasks! Station {name} is getting quite warm.",
+    "Hiss! Someone's pouncing on those tasks! Station {name} is getting quite warm at {temp}°C.",
     "My whiskers are twitching! {name} is pushing {cpu}% CPU. That's a lot of hunting!",
-    "Grrr... heavy lifting detected. I'm watching the thermal levels closely, Human."
+    "Grrr... heavy lifting detected. I'm watching the thermal levels ({temp}°C) closely, Human."
   ],
   PRODUCTIVE: [
     "Prrrrt! {count} commits secured. The code harvest is looking magnificent today.",
@@ -56,7 +58,7 @@ const BENGAL_PERSONALITY = {
 function getInsight(nodes: NodeData[], commits: string[]) {
   const onlineNodes = nodes.filter(n => n.online);
   const offlineNodes = nodes.filter(n => !n.online);
-  const highLoadNode = onlineNodes.find(n => n.cpu > 75 || n.ram > 80);
+  const highLoadNode = onlineNodes.find(n => n.cpu > 75 || n.ram > 80 || n.temp > 80);
   const totalCommits = commits.length;
 
   // 1/3 chance to show a "Cool Fact" instead of a status report
@@ -71,7 +73,9 @@ function getInsight(nodes: NodeData[], commits: string[]) {
 
   if (highLoadNode) {
     const random = BENGAL_PERSONALITY.STRESSED[Math.floor(Math.random() * BENGAL_PERSONALITY.STRESSED.length)];
-    return random.replace('{name}', highLoadNode.name).replace('{cpu}', highLoadNode.cpu.toString());
+    return random.replace('{name}', highLoadNode.name)
+                 .replace('{cpu}', highLoadNode.cpu.toString())
+                 .replace('{temp}', highLoadNode.temp.toString());
   }
 
   if (totalCommits > 0) {
@@ -85,7 +89,7 @@ function getInsight(nodes: NodeData[], commits: string[]) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { nodes, commits } = body as { nodes: { node_name?: string, name?: string, cpu_usage?: number, ram_usage?: number, last_seen?: string, online?: boolean, git_commits_24h?: number }[], commits: string[] };
+    const { nodes, commits } = body as { nodes: { node_name?: string, name?: string, cpu_usage?: number, ram_usage?: number, cpu_temp?: number, last_seen?: string, online?: boolean, git_commits_24h?: number }[], commits: string[] };
 
     if (!nodes || !Array.isArray(nodes) || nodes.length === 0) {
       return NextResponse.json({ insight: "The studio is silent. Waiting for the first station to report for duty." });
@@ -98,6 +102,7 @@ export async function POST(req: Request) {
         name: n.node_name || n.name || 'unknown',
         cpu: n.cpu_usage ?? 0,
         ram: n.ram_usage ?? 0,
+        temp: n.cpu_temp ?? 0,
         online: typeof n.online === 'boolean' ? n.online : isOnline,
         git_commits_24h: n.git_commits_24h ?? 0
       };

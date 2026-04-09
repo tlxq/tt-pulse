@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 export interface HistoryPoint {
   cpu_usage: number
   ram_usage: number
+  cpu_temp?: number
   recorded_at: string
 }
 
@@ -19,6 +20,7 @@ export interface NodeStatus {
   node_name: string
   cpu_usage: number
   ram_usage: number
+  cpu_temp?: number
   git_commits_24h: number
   last_seen: string
   latency_ms?: number
@@ -44,7 +46,7 @@ export function useStatus() {
   const fetchHistory = useCallback(async (nodeName: string): Promise<HistoryPoint[]> => {
     const { data, error } = await supabase
       .from('node_history')
-      .select('cpu_usage, ram_usage, recorded_at')
+      .select('cpu_usage, ram_usage, cpu_temp, recorded_at')
       .eq('node_name', nodeName)
       .order('recorded_at', { ascending: false })
       .limit(20)
