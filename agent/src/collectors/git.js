@@ -101,33 +101,51 @@ const collector = {
             // 1. Get current branch name
             const branchCmd = `git -C "${repoPath}" rev-parse --abbrev-ref HEAD`;
             
-            // 2. Get git author name
-            const authorCmd = `git -C "${repoPath}" config user.name`;
-
-            // 3. Get total commits in the last 24 hours
-            const countCmd = `git -C "${repoPath}" rev-list --count --since="24.hours.ago" HEAD`;
-            
-            // 4. Get the 5 most recent commit messages with timestamp
-            const recentCmd = `git -C "${repoPath}" log -n 5 --pretty=format:"%ct|%s"`;
-
-            // 5. Get repo name
-            const repoNameCmd = `git -C "${repoPath}" rev-parse --show-toplevel`;
-
-            // 6. Get remote origin URL (100% accuracy for links)
-            const remoteCmd = `git -C "${repoPath}" remote get-url origin`;
+            // 2. Get git author name (repo specific or global fallback)
+            const authorCmd = `git -C "${repoPath}" config user.name || git config --global user.name`;
 
             exec(branchCmd, (err0, stdout0) => {
                 const branch = stdout0 && !err0 ? stdout0.trim() : 'unknown';
                 
                 exec(authorCmd, (err1, stdout1) => {
                     const author = stdout1 && !err1 ? stdout1.trim() : '';
+                    
+                    // Filter by author to only track commits made on this computer/by this user
+                    // Filter by author to only track commits made on this computer/by this user
+                    const filterAuthor = config.githubUsername || author;
+                    const authorFilter = filterAuthor ? `--author="${filterAuthor}"` : '';
+
+                    // Use git reflog to identify commits that were actually CREATED on this machine.
+                    // This separates activity between different computers using the same GitHub account.
+                    // We look for "commit:" or "commit (amend):" actions in the local reflog.
+
+                    // 3. Get total commits in the last 24 hours created ON THIS MACHINE
+                    const countCmd = `git -C "${repoPath}" reflog --since="24.hours.ago" --pretty=format:"%gs" | grep -E "^commit (amend)?: " | wc -l`;
+
+                    // 4. Get the 5 most recent commit messages created ON THIS MACHINE with timestamp
+                    const recentCmd = `git -C "${repoPath}" reflog -n 20 --since="24.hours.ago" --pretty=format:"%ct|%gs" | grep -E "\\|commit (amend)?: " | head -n 5`;
+
+                    // 5. Get repo name
+                    const repoNameCmd = `git -C "${repoPath}" rev-parse --show-toplevel`;
+
+                    // 6. Get remote origin URL
+                    const remoteCmd = `git -C "${repoPath}" remote get-url origin`;
 
                     exec(countCmd, (err2, stdout2) => {
                         const count = parseInt(stdout2 ? stdout2.trim() : '0') || 0;
-                        
+
                         exec(recentCmd, (err3, stdout3) => {
-                            const messages = stdout3 && !err3 ? stdout3.trim().split('\n').filter(m => m) : [];
-                            
+                            let messages = [];
+                            if (stdout3 && !err3) {
+                                messages = stdout3.trim().split('\n')
+                                    .filter(m => m)
+                                    .map(m => {
+                                        // Format: timestamp|commit: message OR timestamp|commit (amend): message
+                                        // We want to strip the "commit: " prefix for the dashboard
+                                        return m.replace(/\|commit (amend)?: /, '|');
+                                    });
+                            }
+
                             exec(repoNameCmd, (err4, stdout4) => {
                                 const repoFull = stdout4 && !err4 ? stdout4.trim() : repoPath;
                                 const repoName = path.basename(repoFull);
