@@ -111,7 +111,6 @@ const collector = {
                     const author = stdout1 && !err1 ? stdout1.trim() : '';
                     
                     // Filter by author to only track commits made on this computer/by this user
-                    // Filter by author to only track commits made on this computer/by this user
                     const filterAuthor = config.githubUsername || author;
                     const authorFilter = filterAuthor ? `--author="${filterAuthor}"` : '';
 
@@ -120,10 +119,10 @@ const collector = {
                     // We look for "commit:" or "commit (amend):" actions in the local reflog.
 
                     // 3. Get total commits in the last 24 hours created ON THIS MACHINE
-                    const countCmd = `git -C "${repoPath}" reflog --since="24.hours.ago" --pretty=format:"%gs" | grep -E "^commit (amend)?: " | wc -l`;
-
+                    const countCmd = `git -C "${repoPath}" reflog --since="24.hours.ago" --pretty=format:"%gs" | grep -E "^commit.*: " | wc -l`;
+                    
                     // 4. Get the 5 most recent commit messages created ON THIS MACHINE with timestamp
-                    const recentCmd = `git -C "${repoPath}" reflog -n 20 --since="24.hours.ago" --pretty=format:"%ct|%gs" | grep -E "\\|commit (amend)?: " | head -n 5`;
+                    const recentCmd = `git -C "${repoPath}" reflog -n 20 --since="24.hours.ago" --pretty=format:"%ct|%gs" | grep -E "[|]commit.*: " | head -n 5`;
 
                     // 5. Get repo name
                     const repoNameCmd = `git -C "${repoPath}" rev-parse --show-toplevel`;
@@ -133,7 +132,7 @@ const collector = {
 
                     exec(countCmd, (err2, stdout2) => {
                         const count = parseInt(stdout2 ? stdout2.trim() : '0') || 0;
-
+                        
                         exec(recentCmd, (err3, stdout3) => {
                             let messages = [];
                             if (stdout3 && !err3) {
@@ -142,7 +141,7 @@ const collector = {
                                     .map(m => {
                                         // Format: timestamp|commit: message OR timestamp|commit (amend): message
                                         // We want to strip the "commit: " prefix for the dashboard
-                                        return m.replace(/\|commit (amend)?: /, '|');
+                                        return m.replace(/\|commit.*: /, '|');
                                     });
                             }
 
