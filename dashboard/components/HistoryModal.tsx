@@ -8,7 +8,7 @@ import {
   Text, 
   AreaChart
 } from '@tremor/react';
-import { HistoryPoint } from '@/hooks/useStatus';
+import { HistoryPoint } from '@/types';
 
 interface HistoryModalProps {
   isOpen: boolean;

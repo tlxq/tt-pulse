@@ -2,12 +2,11 @@
 
 import { Zap, ShieldCheck } from 'lucide-react';
 import { BengalMascot } from './BengalMascot';
+import { AiMetadata } from '@/types';
 
-interface SREInsightProps {
+interface SREInsightProps extends AiMetadata {
   insight: string;
   loading: boolean;
-  fallback?: boolean;
-  quotaExceeded?: boolean;
 }
 
 export function SREInsight({ insight, loading, fallback, quotaExceeded }: SREInsightProps) {
