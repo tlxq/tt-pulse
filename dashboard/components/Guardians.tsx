@@ -124,7 +124,6 @@ export function Guardians({ loading, isDegraded, isHighLoad, insight }: Guardian
           )}
           <BengalMascot
             mood={moodTexas}
-            isDegraded={isDegraded}
             eyeOffset={eyeOffset}
             onClick={() => handleCatClick('texas')}
             className="w-44 h-44 md:w-56 md:h-56 opacity-90 hover:opacity-100 transition-all hover:scale-105"
@@ -153,7 +152,6 @@ export function Guardians({ loading, isDegraded, isHighLoad, insight }: Guardian
           )}
           <DevonRexMascot
             mood={moodGosta}
-            isDegraded={isDegraded}
             eyeOffset={eyeOffset}
             onClick={() => handleCatClick('gosta')}
             className="w-44 h-44 md:w-56 md:h-56 opacity-90 hover:opacity-100 transition-all hover:scale-105"

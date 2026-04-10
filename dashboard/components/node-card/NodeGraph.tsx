@@ -53,7 +53,7 @@ export function NodeGraph({ history, isMounted }: NodeGraphProps) {
   }));
 
   return (
-    <div className="h-36 w-full mt-2 -mx-2 relative z-10">
+    <div className="h-24 w-full mt-2 -mx-2 relative z-10">
       {isMounted ? (
         <AreaChart
           className="h-full"

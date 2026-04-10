@@ -5,19 +5,19 @@ import type { CatMood } from '@/types';
 
 interface DevonRexMascotProps {
   mood?: CatMood;
-  isDegraded?: boolean;
   eyeOffset?: { x: number; y: number };
   onClick?: () => void;
   className?: string;
 }
 
-export function DevonRexMascot({ mood = 'idle', isDegraded, eyeOffset, onClick, className }: DevonRexMascotProps) {
+export function DevonRexMascot({ mood = 'idle', eyeOffset, onClick, className }: DevonRexMascotProps) {
   const isAlert    = mood === 'alert';
-  const isTired    = mood === 'tired' || !!isDegraded;
+  const isTired    = mood === 'tired';
   const isYawn     = mood === 'yawn';
   const isStretch  = mood === 'stretch';
   const isStartled = mood === 'startled';
   const isPaw      = mood === 'paw';
+  const isDrink    = mood === 'drink';
 
   // Animation speeds
   const tailSpeed   = isAlert ? '1s'    : isTired ? '8s'   : '4.5s';
@@ -31,7 +31,7 @@ export function DevonRexMascot({ mood = 'idle', isDegraded, eyeOffset, onClick, 
   const dark     = '#3d4e60';
   const earInner = '#c89aaa';
   const stripe   = '#4a5f70';
-  const eyeColor = isDegraded ? '#5a6a7a' : '#b87820';
+  const eyeColor = '#b87820';
   const noseRose = '#dda0b8';
 
   // Cursor tracking — clamped ±2 SVG units (Devon Rex eyes are smaller)
@@ -49,7 +49,7 @@ export function DevonRexMascot({ mood = 'idle', isDegraded, eyeOffset, onClick, 
 
   // Glow
   const glowPx  = isAlert ? '18px' : '10px';
-  const glowClr = isDegraded ? 'none' : isAlert ? 'rgba(239,68,68,0.3)' : 'rgba(180,120,32,0.22)';
+  const glowClr = isAlert ? 'rgba(239,68,68,0.3)' : 'rgba(180,120,32,0.22)';
 
   const svgAnim = isStartled
     ? 'grStartle 0.5s ease-out forwards'
@@ -57,23 +57,26 @@ export function DevonRexMascot({ mood = 'idle', isDegraded, eyeOffset, onClick, 
     ? 'catStretch 2s ease-in-out'
     : undefined;
 
+  // Head-dip transform origin at neck (50, 55)
+  const headDipStyle = isDrink
+    ? { transformOrigin: '50px 55px', animation: 'grDrink 3.2s ease-in-out' }
+    : undefined;
+
   return (
     <div
       className={`relative flex items-center justify-center ${className ?? 'w-40 h-40'} ${onClick ? 'cursor-pointer select-none' : ''}`}
       onClick={onClick}
     >
-      {!isDegraded && (
-        <div
-          className={`absolute inset-0 rounded-full border ${isAlert ? 'border-red-500/20' : 'border-amber-500/15'}`}
-          style={{ animation: `ping ${isAlert ? '2s' : '5s'} 1s ease-in-out infinite` }}
-        />
-      )}
+      <div
+        className={`absolute inset-0 rounded-full border ${isAlert ? 'border-red-500/20' : 'border-amber-500/15'}`}
+        style={{ animation: `ping ${isAlert ? '2s' : '5s'} 1s ease-in-out infinite` }}
+      />
 
       <svg
-        viewBox="0 0 100 115"
-        className={`w-full h-full transition-all duration-700 ${isDegraded ? 'opacity-40 grayscale' : ''}`}
+        viewBox="0 0 100 105"
+        className="w-full h-full transition-all duration-700"
         style={{
-          filter: isDegraded ? undefined : `drop-shadow(0 0 ${glowPx} ${glowClr})`,
+          filter: `drop-shadow(0 0 ${glowPx} ${glowClr})`,
           animation: svgAnim,
         }}
       >
@@ -94,21 +97,11 @@ export function DevonRexMascot({ mood = 'idle', isDegraded, eyeOffset, onClick, 
           </radialGradient>
         </defs>
 
-        {/* WOODEN LEDGE */}
-        <rect x="8"  y="96" width="84" height="8" rx="2"   fill="#4a3828" />
-        <rect x="5"  y="101" width="90" height="5" rx="1.5" fill="#3a2a1e" />
-        <g stroke="#3a2a1e" strokeWidth="0.5" opacity="0.4">
-          <line x1="20" y1="97" x2="18" y2="104" />
-          <line x1="40" y1="97" x2="38" y2="104" />
-          <line x1="60" y1="97" x2="58" y2="104" />
-          <line x1="80" y1="97" x2="78" y2="104" />
-        </g>
-
         {/* ── TAIL ── */}
-        <g style={{ transformOrigin: '68px 88px', animation: `grTail ${tailSpeed} ease-in-out infinite` }}>
-          <path d="M68 88 Q 82 85 88 75 Q 94 65 88 55"
+        <g style={{ transformOrigin: '68px 84px', animation: `grTail ${tailSpeed} ease-in-out infinite` }}>
+          <path d="M68 84 Q 82 81 88 71 Q 94 61 88 51"
             fill="none" stroke={base} strokeWidth="5.5" strokeLinecap="round" />
-          <circle cx="88" cy="55" r="3.5" fill={dark} />
+          <circle cx="88" cy="51" r="3.5" fill={dark} />
         </g>
 
         {/* ── BODY ── */}
@@ -131,24 +124,27 @@ export function DevonRexMascot({ mood = 'idle', isDegraded, eyeOffset, onClick, 
             <path d="M44 80 Q46 78 48 80 Q50 78 52 80" /><path d="M46 75 Q48 73 50 75" />
           </g>
 
-          {/* LEFT PAW — raises on mood='paw' (left paw for variety vs Bengal) */}
-          <g style={isPaw ? { transformOrigin: '39px 90px', animation: 'grPawRaise 1.6s ease-in-out forwards' } : undefined}>
-            <ellipse cx="39" cy="93" rx="9" ry="4.5" fill={light} />
+          {/* LEFT PAW — raises on mood='paw' */}
+          <g style={isPaw ? { transformOrigin: '39px 86px', animation: 'grPawRaise 1.6s ease-in-out forwards' } : undefined}>
+            <ellipse cx="39" cy="89" rx="9" ry="4.5" fill={light} />
             <g stroke={base} strokeWidth="0.9" strokeLinecap="round" fill="none" opacity="0.65">
-              <line x1="34" y1="90" x2="33" y2="95" />
-              <line x1="39" y1="89" x2="39" y2="95" />
-              <line x1="44" y1="90" x2="45" y2="95" />
+              <line x1="34" y1="86" x2="33" y2="91" />
+              <line x1="39" y1="85" x2="39" y2="91" />
+              <line x1="44" y1="86" x2="45" y2="91" />
             </g>
           </g>
 
           {/* RIGHT PAW */}
-          <ellipse cx="61" cy="93" rx="9" ry="4.5" fill={light} />
+          <ellipse cx="61" cy="89" rx="9" ry="4.5" fill={light} />
           <g stroke={base} strokeWidth="0.9" strokeLinecap="round" fill="none" opacity="0.65">
-            <line x1="56" y1="90" x2="55" y2="95" />
-            <line x1="61" y1="89" x2="61" y2="95" />
-            <line x1="66" y1="90" x2="67" y2="95" />
+            <line x1="56" y1="86" x2="55" y2="91" />
+            <line x1="61" y1="85" x2="61" y2="91" />
+            <line x1="66" y1="86" x2="67" y2="91" />
           </g>
         </g>
+
+        {/* ── HEAD GROUP — rotates for drink ── */}
+        <g style={headDipStyle}>
 
         {/* Neck */}
         <ellipse cx="50" cy="55" rx="9" ry="7" fill="url(#grHeadGrad)" />
@@ -249,6 +245,24 @@ export function DevonRexMascot({ mood = 'idle', isDegraded, eyeOffset, onClick, 
           <line x1="62" y1="52" x2="79" y2="55" />
         </g>
 
+        </g>{/* end head group */}
+
+        {/* ── WATER BOWL ── always visible */}
+        <g>
+          {/* Bowl outer */}
+          <ellipse cx="50" cy="99" rx="17" ry="5.5" fill="#1a2a3a" stroke="#2a3f55" strokeWidth="0.8" />
+          {/* Water surface */}
+          <ellipse cx="50" cy="97.5" rx="13" ry="3.2" fill="#1d4ed8" opacity="0.55" />
+          {/* Water shimmer 1 */}
+          <ellipse cx="44" cy="97" rx="3.5" ry="1" fill="white" opacity={isDrink ? 0.35 : 0.12}
+            style={isDrink ? { animation: 'grWaterRipple 0.8s ease-in-out infinite' } : undefined} />
+          {/* Water shimmer 2 */}
+          <ellipse cx="55" cy="98" rx="2" ry="0.7" fill="white" opacity={isDrink ? 0.25 : 0.08}
+            style={isDrink ? { animation: 'grWaterRipple 0.8s 0.4s ease-in-out infinite' } : undefined} />
+          {/* Bowl rim highlight */}
+          <ellipse cx="50" cy="93.5" rx="17" ry="2" fill="none" stroke="#3b5a78" strokeWidth="1.2" opacity="0.6" />
+        </g>
+
         <style jsx>{`
           @keyframes grTail {
             0%, 100% { transform: rotate(0deg); }
@@ -284,6 +298,19 @@ export function DevonRexMascot({ mood = 'idle', isDegraded, eyeOffset, onClick, 
             45%  { transform: scale(0.94) rotate(-3deg); }
             70%  { transform: scale(1.05) rotate(1deg);  }
             100% { transform: scale(1)    rotate(0deg);  }
+          }
+          @keyframes grDrink {
+            0%           { transform: rotate(0deg)   translateY(0px);  }
+            15%          { transform: rotate(22deg)  translateY(5px);  }
+            30%, 55%     { transform: rotate(25deg)  translateY(6px);  }
+            42%          { transform: rotate(20deg)  translateY(5px);  }
+            70%          { transform: rotate(25deg)  translateY(6px);  }
+            85%          { transform: rotate(10deg)  translateY(2px);  }
+            100%         { transform: rotate(0deg)   translateY(0px);  }
+          }
+          @keyframes grWaterRipple {
+            0%, 100% { rx: 3.5; opacity: 0.35; }
+            50%      { rx: 5;   opacity: 0.15; }
           }
         `}</style>
       </svg>

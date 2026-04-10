@@ -4,6 +4,7 @@ import { Apple, Monitor, Wifi } from 'lucide-react';
 import { Title } from '@tremor/react';
 import Image from 'next/image';
 import { useState } from 'react';
+import { getRelativeTime } from '@/lib/utils';
 
 export const OSIcon = ({
   platform,
@@ -37,6 +38,7 @@ interface NodeHeaderProps {
   latencyMs?: number;
   isOnline: boolean;
   githubUsername?: string;
+  lastSeen?: string;
 }
 
 export function NodeHeader({
@@ -46,11 +48,12 @@ export function NodeHeader({
   latencyMs,
   isOnline,
   githubUsername,
+  lastSeen,
 }: NodeHeaderProps) {
   const [avatarError, setAvatarError] = useState(false);
 
   return (
-    <div className="flex items-start justify-between mb-6 relative z-10 p-2">
+    <div className="flex items-start justify-between mb-3 relative z-10 p-2">
       <div className="space-y-3">
         <div className="flex items-center gap-4">
           <div
@@ -94,6 +97,15 @@ export function NodeHeader({
               {isOnline ? 'Grinding' : 'Sleeping'}
             </span>
           </div>
+          {!isOnline && lastSeen && (
+            <time
+              dateTime={lastSeen}
+              title={new Date(lastSeen).toLocaleString()}
+              className="text-[8px] font-bold text-slate-500 uppercase tracking-wider italic cursor-default"
+            >
+              {getRelativeTime(lastSeen)}
+            </time>
+          )}
 
           {githubUsername && (
             <div className="flex items-center gap-2 px-2 py-0.5 rounded-full bg-nebula-accent/10 border border-nebula-accent/20">

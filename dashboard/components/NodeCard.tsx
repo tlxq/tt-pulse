@@ -3,7 +3,7 @@
 import { NodeStatus } from "@/types";
 import { useEffect, useState, Fragment } from "react";
 import { HistoryModal } from "./HistoryModal";
-import { getRelativeTime, isNodeOnline } from "@/lib/utils";
+import { isNodeOnline } from "@/lib/utils";
 import { Card } from "@tremor/react";
 import { History } from "lucide-react";
 import { NodeHeader } from "./node-card/NodeHeader";
@@ -32,9 +32,9 @@ export function NodeCard({ node }: { node: NodeStatus }) {
 
   return (
     <Fragment>
-      <Card className={`relative bg-white/[0.03] ring-1 transition-all duration-700 overflow-hidden rounded-[2.5rem] backdrop-blur-3xl shadow-2xl
-        ${isOnline 
-          ? 'ring-emerald-500/30 bg-emerald-500/[0.02] shadow-emerald-500/10 scale-[1.02]' 
+      <Card className={`relative bg-white/[0.03] ring-1 transition-all duration-700 overflow-hidden rounded-[2.5rem] backdrop-blur-3xl shadow-2xl h-full flex flex-col
+        ${isOnline
+          ? 'ring-emerald-500/30 bg-emerald-500/[0.02] shadow-emerald-500/10'
           : 'ring-white/5 grayscale opacity-70 border-white/5'
         }`}>
         
@@ -47,16 +47,17 @@ export function NodeCard({ node }: { node: NodeStatus }) {
         )}
         
         <div className="flex justify-between items-start">
-          <NodeHeader 
+          <NodeHeader
             nodeName={node.node_name}
             osPlatform={node.os_platform}
             osDistro={node.os_distro}
             latencyMs={node.latency_ms}
             isOnline={isOnline}
             githubUsername={node.github_username}
+            lastSeen={node.last_seen}
           />
 
-          <div className="flex flex-col items-end gap-3 p-4">
+          <div className="flex items-start p-4">
             <button
               onClick={() => setIsOpen(true)}
               aria-label="View historical trends"
@@ -64,15 +65,6 @@ export function NodeCard({ node }: { node: NodeStatus }) {
             >
               <History className="w-4 h-4" />
             </button>
-            {!isOnline && (
-              <time
-                dateTime={node.last_seen}
-                title={new Date(node.last_seen).toLocaleString()}
-                className="text-[9px] font-bold text-slate-500 uppercase tracking-tight italic cursor-default"
-              >
-                Seen {getRelativeTime(node.last_seen)}
-              </time>
-            )}
           </div>
         </div>
 
@@ -92,8 +84,11 @@ export function NodeCard({ node }: { node: NodeStatus }) {
           history={node.history}
         />
 
-        <NodeTerminal 
+        <NodeTerminal
           recentCommits={node.recent_commits}
+          githubUsername={node.github_username}
+          repoName={node.repo_name}
+          branchName={node.branch_name}
         />
 
       </Card>

@@ -9,24 +9,28 @@ export interface NodeData {
 
 export type Guardian = 'texas' | 'gosta';
 
-// ── Texas (Bengal) — excitable, chaotic energy ───────────────────────────────
+// ── Texas (Bengal) — direct, engaged, urgent ─────────────────────────────────
 
 function getTexasFunnyFact(nodes: NodeData[], commits: string[]) {
   const totalCpu = nodes.reduce((acc, n) => acc + n.cpu, 0);
   const avgRam = nodes.length > 0 ? Math.round(nodes.reduce((acc, n) => acc + n.ram, 0) / nodes.length) : 0;
+  const avgCpu = nodes.length > 0 ? Math.round(totalCpu / nodes.length) : 0;
   const maxTemp = nodes.length > 0 ? Math.max(...nodes.map(n => n.temp)) : 0;
   const totalCommits = commits.length;
-  const highLoadNode = nodes.find(n => n.cpu > 70);
-  const mostCommits = Math.max(...nodes.map(n => n.git_commits_24h || 0));
+  const activeCount = nodes.filter(n => n.online).length;
+  const nodeCount = nodes.length;
+  const topNode = [...nodes].sort((a, b) => (b.git_commits_24h || 0) - (a.git_commits_24h || 0))[0];
+  const topName = topNode?.name ?? 'none';
+  const topCommits = topNode?.git_commits_24h ?? 0;
 
   const facts = [
-    `Fun fact: At ${totalCpu}% total CPU, we have enough raw power to simulate a small galaxy... or at least run Chrome with 4 tabs open.`,
-    `Data alert: The family's average RAM usage is ${avgRam}%. We're officially using more memory than the Apollo 11 moon landing.`,
-    `Hustle report: ${totalCommits} conquests recently. If code were coffee, we'd be vibrating at a cellular level by now.`,
-    `Mascot observation: ${highLoadNode ? highLoadNode.name : 'The cluster'} is purring quite loudly. I suspect some heavy-duty math is happening.`,
-    `Efficiency check: With ${mostCommits} logs on our top station, we're out-pacing a caffeinated squirrel on a deadline.`,
-    `Thermal update: We've hit ${maxTemp}°C on our hottest node. Radiating enough heat to keep my Bengal paws warm all winter!`,
-    `Network whisper: Our latency is so low, I can practically see the bits moving before they even decide where to go.`
+    `Cluster report: ${totalCpu}% combined CPU load across ${nodeCount} stations. Heavy work — or someone left a browser open.`,
+    `RAM average: ${avgRam}%. ${avgRam > 70 ? 'Getting cozy up there.' : 'Plenty of room to hunt.'}`,
+    `${totalCommits} commits today. ${totalCommits === 0 ? 'Rest day, apparently.' : "The pack's productivity confirmed."}`,
+    `Thermal scan: max ${maxTemp}°C. ${maxTemp > 75 ? 'Warm — fan curves might need attention.' : 'All within tolerance.'}`,
+    `${activeCount}/${nodeCount} nodes online. ${activeCount === nodeCount ? 'Full pack. Good.' : 'Someone is sleeping on the job.'}`,
+    `Top station: ${topName} with ${topCommits} commits. I watched every single push.`,
+    `CPU average: ${avgCpu}%. ${avgCpu > 60 ? 'Solid effort.' : 'Light day. Systems coasting.'}`,
   ];
 
   return facts[Math.floor(Math.random() * facts.length)];
@@ -34,43 +38,49 @@ function getTexasFunnyFact(nodes: NodeData[], commits: string[]) {
 
 const BENGAL_PERSONALITY = {
   STRESSED: [
-    "Hiss! Someone's pouncing on those tasks! Station {name} is getting quite warm at {temp}°C.",
-    "My whiskers are twitching! {name} is pushing {cpu}% CPU. That's a lot of hunting!",
-    "Grrr... heavy lifting detected. I'm watching the thermal levels ({temp}°C) closely, Human."
+    "⚠ {name}: CPU {cpu}%, {temp}°C — locked on. Check top processes now.",
+    "Alert — {name} thermal-spiking at {temp}°C and {cpu}% CPU load. Not playing around.",
+    "Grrr. {name} maxing out — {cpu}% CPU, {ram}% RAM. Something's hunting this machine.",
   ],
   PRODUCTIVE: [
-    "Prrrrt! {count} commits secured. The code harvest is looking magnificent today.",
-    "I see fresh logs! The family is marking the digital landscape with pure productivity.",
-    "Magnificent! Your momentum is legendary. I've noted every single one of those {count} updates."
+    "Logged: {count} commits across all stations. Today's hunt is going well — keep it moving.",
+    "Prrrrt — {count} pushes. Velocity is strong. I've marked every single one.",
+    "{count} commits. All stations contributing. The code harvest is real today.",
   ],
   IDLE: [
-    "The studio is quiet. I'll take the high ground and monitor the resting pulse.",
-    "Purrr... serene levels across the stations. A perfect time for some digital grooming.",
-    "All systems nominal. I'm just here for the server-rack warmth and the occasional data packet."
+    "All stations nominal. CPU avg {avgCpu}%, RAM avg {avgRam}%. Quiet enough for a nap — but I'm watching.",
+    "Nothing alarming. {activeCount}/{nodeCount} nodes online, all under load threshold. Monitoring pulse: steady.",
+    "Systems at rest. {avgCpu}% avg CPU across {nodeCount} stations. I'll keep the high ground warm.",
   ],
   DEGRADED: [
-    "Mrow? A station has gone to sleep. I've lost the scent of the connection.",
-    "The link is tangled. I'm batting at the wires, but {name} remains silent.",
-    "A gap in our lineup! I'll stay on high alert until the full pack returns."
+    "⚠ {name} has gone dark — connection lost. Needs investigating.",
+    "Station {name} is offline. {activeCount} of {nodeCount} nodes reporting. Tracking the gap.",
+    "Lost contact with {name}. {activeCount}/{nodeCount} active. Eyes open.",
   ]
 };
 
-// ── Gösta (Devon Rex) — dry, sardonic, dignified ─────────────────────────────
+// ── Gösta (Devon Rex) — dry precision, mild contempt ─────────────────────────
 
 function getGostaFunnyFact(nodes: NodeData[], commits: string[]) {
   const totalCpu = nodes.reduce((acc, n) => acc + n.cpu, 0);
   const avgRam = nodes.length > 0 ? Math.round(nodes.reduce((acc, n) => acc + n.ram, 0) / nodes.length) : 0;
+  const avgCpu = nodes.length > 0 ? Math.round(totalCpu / nodes.length) : 0;
   const maxTemp = nodes.length > 0 ? Math.max(...nodes.map(n => n.temp)) : 0;
   const totalCommits = commits.length;
+  const activeCount = nodes.filter(n => n.online).length;
+  const nodeCount = nodes.length;
+  const topNode = [...nodes].sort((a, b) => (b.git_commits_24h || 0) - (a.git_commits_24h || 0))[0];
+  const topName = topNode?.name ?? 'undetermined';
+  const topCommits = topNode?.git_commits_24h ?? 0;
 
   const facts = [
-    `I note that total CPU consumption stands at ${totalCpu}%. Acceptable, I suppose. I've seen higher from humans trying to open a spreadsheet.`,
-    `Average RAM at ${avgRam}%. One could describe this as efficient. I prefer "not embarrassing."`,
-    `${totalCommits} commits. I have catalogued each one from my ledge. You are welcome.`,
-    `Peak temperature: ${maxTemp}°C. I myself maintain a dignified warmth at all times. The machines are merely attempting to keep up.`,
-    `I have conducted a thorough inspection of all metrics. They are, as I suspected, mediocre. Yet somehow... improving.`,
-    `From my vantage point, I observe the studio hums along adequately. I shall refrain from further commentary at this time.`,
-    `The data suggests productivity. I neither confirm nor deny having predicted this outcome from the beginning.`
+    `CPU aggregate: ${totalCpu}%. I'll let you calculate the efficiency ratio — you may not find it comforting.`,
+    `${totalCommits} commits today. I have inspected each one. The quality varies.`,
+    `RAM average: ${avgRam}%. ${avgRam > 75 ? 'Not a crisis. Merely inelegant.' : 'Within acceptable parameters. For now.'}`,
+    `Peak temperature: ${maxTemp}°C. The hardware is attempting to keep up. I sympathise, marginally.`,
+    `${activeCount} of ${nodeCount} nodes reporting. ${activeCount < nodeCount ? 'One is conspicuously absent. I have opinions.' : 'Full complement. As it should be.'}`,
+    `Top station: ${topName}. ${topCommits} commits. I have formed an opinion about this workload distribution.`,
+    `CPU average: ${avgCpu}%. ${avgCpu < 30 ? 'Underutilised, if you ask me.' : avgCpu > 70 ? 'Strained, but functional.' : 'Mediocre. Consistent with expectations.'}`,
   ];
 
   return facts[Math.floor(Math.random() * facts.length)];
@@ -78,24 +88,24 @@ function getGostaFunnyFact(nodes: NodeData[], commits: string[]) {
 
 const GOSTA_PERSONALITY = {
   STRESSED: [
-    "I see {name} is straining at {cpu}% CPU. How... pedestrian. I'll observe from a safe distance.",
-    "Elevated temperatures on {name}. {temp}°C. I disapprove of excess, in all its forms.",
-    "The workload appears substantial. One notes this without particular alarm, merely mild disdain."
+    "{name} at {cpu}% CPU, {temp}°C. Excessive, as usual. The processes presumably know what they are doing.",
+    "I observe {name} in a state of elevated resource consumption — {cpu}% CPU. Disorderly, but noted.",
+    "Thermal event on {name}: {temp}°C. I disapprove. {cpu}% CPU is also not ideal. The report is complimentary.",
   ],
   PRODUCTIVE: [
-    "{count} commits. Adequate output. Don't expect me to be impressed — though I may be, marginally.",
-    "Work has been committed. I've noted it from my ledge. You may proceed.",
-    "I see {count} fresh logs. The studio produces. I tolerate the noise, for now."
+    "{count} commits. Logged, catalogued, filed. The studio functions. I take no credit — nor do I assign any.",
+    "Output: {count} commits across {nodeCount} stations. Acceptable. I neither applaud nor condemn.",
+    "{count} pushes. The velocity is, I concede, not embarrassing. You may continue.",
   ],
   IDLE: [
-    "The studio is blessedly quiet. Finally, some decorum. I shall observe from my ledge.",
-    "All metrics at rest. As they should be. I have always said: stillness is underrated.",
-    "Nothing of consequence is happening. This is, broadly speaking, my preference."
+    "All {nodeCount} stations nominal. CPU avg {avgCpu}%, RAM avg {avgRam}%. Order is maintained.",
+    "Quiet. {activeCount}/{nodeCount} nodes online, all within thresholds. This is how things should be.",
+    "Nothing requires my intervention. CPU avg {avgCpu}%. I shall observe from my ledge.",
   ],
   DEGRADED: [
-    "A station has gone dark. Regrettably, {name} has chosen absence. I disapprove.",
-    "{name} is silent. I find this both irritating and unsurprising.",
-    "The perimeter has a gap. I've noted it. Fixing it is, apparently, your responsibility."
+    "{name} is absent from the network. {activeCount} of {nodeCount} remain. Irritating, though unsurprising.",
+    "Station {name} has gone dark. I noted the anomaly. Fixing it is, however, your problem.",
+    "The perimeter is compromised — {name} offline. {activeCount}/{nodeCount} active. I am displeased.",
   ]
 };
 
@@ -109,6 +119,15 @@ export function getInsight(nodes: NodeData[], commits: string[], guardian: Guard
   const highLoadNode = onlineNodes.find(n => n.cpu > 75 || n.ram > 80 || n.temp > 80);
   const totalCommits = commits.length;
 
+  const avgCpu = onlineNodes.length > 0
+    ? Math.round(onlineNodes.reduce((acc, n) => acc + n.cpu, 0) / onlineNodes.length)
+    : 0;
+  const avgRam = onlineNodes.length > 0
+    ? Math.round(onlineNodes.reduce((acc, n) => acc + n.ram, 0) / onlineNodes.length)
+    : 0;
+  const activeCount = onlineNodes.length;
+  const nodeCount = nodes.length;
+
   const personality = guardian === 'gosta' ? GOSTA_PERSONALITY : BENGAL_PERSONALITY;
   const getFunnyFact = guardian === 'gosta' ? getGostaFunnyFact : getTexasFunnyFact;
 
@@ -119,7 +138,10 @@ export function getInsight(nodes: NodeData[], commits: string[], guardian: Guard
 
   if (offlineNodes.length > 0) {
     const random = personality.DEGRADED[Math.floor(Math.random() * personality.DEGRADED.length)];
-    return random.replace('{name}', offlineNodes[0].name);
+    return random
+      .replace('{name}', offlineNodes[0].name)
+      .replace('{activeCount}', activeCount.toString())
+      .replace('{nodeCount}', nodeCount.toString());
   }
 
   if (highLoadNode) {
@@ -127,13 +149,21 @@ export function getInsight(nodes: NodeData[], commits: string[], guardian: Guard
     return random
       .replace('{name}', highLoadNode.name)
       .replace('{cpu}', highLoadNode.cpu.toString())
-      .replace('{temp}', highLoadNode.temp.toString());
+      .replace('{temp}', highLoadNode.temp.toString())
+      .replace('{ram}', highLoadNode.ram.toString());
   }
 
   if (totalCommits > 0) {
     const random = personality.PRODUCTIVE[Math.floor(Math.random() * personality.PRODUCTIVE.length)];
-    return random.replace('{count}', totalCommits.toString());
+    return random
+      .replace('{count}', totalCommits.toString())
+      .replace('{nodeCount}', nodeCount.toString());
   }
 
-  return personality.IDLE[Math.floor(Math.random() * personality.IDLE.length)];
+  const random = personality.IDLE[Math.floor(Math.random() * personality.IDLE.length)];
+  return random
+    .replace('{avgCpu}', avgCpu.toString())
+    .replace('{avgRam}', avgRam.toString())
+    .replace('{activeCount}', activeCount.toString())
+    .replace('{nodeCount}', nodeCount.toString());
 }

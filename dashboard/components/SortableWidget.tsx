@@ -34,13 +34,14 @@ export function SortableWidget({ id, children, className }: SortableWidgetProps)
       style={style}
       className={`relative h-full ${className ?? ''}`}
     >
-      <div 
-        {...attributes} 
+      <div
+        {...attributes}
         {...listeners}
-        className="absolute top-4 right-4 z-50 p-1.5 cursor-grab active:cursor-grabbing bg-black/40 backdrop-blur-md rounded-lg border border-white/10 opacity-0 group-hover:opacity-100 hover:bg-white/10 hover:border-white/20 transition-all shadow-[0_0_10px_rgba(0,0,0,0.5)]"
+        className="absolute top-2 left-1/2 -translate-x-1/2 z-50 px-3 py-1.5 cursor-grab active:cursor-grabbing bg-nebula-accent/25 backdrop-blur-md rounded-full border border-nebula-accent/50 opacity-0 group-hover:opacity-100 transition-all duration-150 shadow-[0_0_12px_rgba(139,92,246,0.3)] hover:bg-nebula-accent/40 flex items-center gap-1.5"
         title="Drag to reorder"
       >
-        <GripHorizontal className="w-4 h-4 text-slate-400" />
+        <GripHorizontal className="w-3.5 h-3.5 text-nebula-accent" />
+        <span className="text-[8px] font-black uppercase tracking-widest text-nebula-accent">drag</span>
       </div>
       <div className="h-full group">
         {children}

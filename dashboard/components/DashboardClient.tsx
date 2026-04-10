@@ -3,15 +3,15 @@
 import { useStatus } from '@/hooks/useStatus';
 import { NodeStatus, AiMetadata } from '@/types';
 import { getStats } from '@/lib/stats';
+import { isNodeOnline } from '@/lib/utils';
 import { NodeCard, NodeCardSkeleton } from '@/components/NodeCard';
-import { Footer } from '@/components/Footer';
-import { RefreshCcw, GitBranch, Zap, TrendingUp } from 'lucide-react';
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { GuardiansCard } from '@/components/GuardiansCard';
+import { GitBranch, Zap, TrendingUp, Terminal, Globe } from 'lucide-react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import { SystemBoot } from '@/components/SystemBoot';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SortableWidget } from '@/components/SortableWidget';
-import { DraggableCat } from '@/components/DraggableCat';
 import {
   DndContext,
   closestCenter,
@@ -27,8 +27,10 @@ import {
   sortableKeyboardCoordinates,
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
+import { useRef } from 'react';
 
 const STORAGE_KEY_ORDER = 'tt-pulse-widget-order';
+const OLD_IDS = ['texas', 'gosta', 'commits', 'momentum'];
 
 interface InsightData {
   text: string;
@@ -37,41 +39,30 @@ interface InsightData {
 
 export function DashboardClient({ initialNodes, initialInsight, initialAiMetadata }: { initialNodes: NodeStatus[], initialInsight: string, initialAiMetadata: AiMetadata }) {
   const { nodes: liveNodes, loading, error: statusError, refresh } = useStatus();
-  
-  // Use initial data if live data is still loading
+
   const nodes = liveNodes.length > 0 ? liveNodes : initialNodes;
-  
-  const [insight, setInsight] = useState<InsightData>({ 
-    text: initialInsight || '', 
-    speaker: 'texas' 
+
+  const [insight, setInsight] = useState<InsightData>({
+    text: initialInsight || '',
+    speaker: 'texas'
   });
   const [loadingAI, setLoadingAI] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [aiMetadata, setAiMetadata] = useState<AiMetadata>(initialAiMetadata || {});
   const [widgetOrder, setWidgetOrder] = useState<string[]>([]);
-  
+
   const lastSpeakerRef = useRef<'texas' | 'gosta'>(insight.speaker);
 
-  // DND Sensors
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
   useEffect(() => {
     const hasBooted = sessionStorage.getItem('tt_pulse_booted');
-    if (hasBooted) {
-      setInitialLoading(false);
-    }
-    
-    // Hydrate from localStorage safely in browser
+    if (hasBooted) setInitialLoading(false);
+
     const savedSpeaker = localStorage.getItem('tt-pulse-guardian');
     if (savedSpeaker === 'texas' || savedSpeaker === 'gosta') {
       setInsight(prev => ({ ...prev, speaker: savedSpeaker }));
@@ -81,7 +72,15 @@ export function DashboardClient({ initialNodes, initialInsight, initialAiMetadat
     const savedOrder = localStorage.getItem(STORAGE_KEY_ORDER);
     if (savedOrder) {
       try {
-        setWidgetOrder(JSON.parse(savedOrder));
+        const parsed: string[] = JSON.parse(savedOrder);
+        // Migrate old widget IDs to new ones
+        const migrated = parsed.filter(id => !OLD_IDS.includes(id));
+        if (!migrated.includes('guardians')) migrated.unshift('guardians');
+        if (!migrated.includes('activity')) {
+          const idx = migrated.indexOf('guardians');
+          migrated.splice(idx + 1, 0, 'activity');
+        }
+        setWidgetOrder(migrated);
       } catch (e) {
         console.error('Failed to parse widget order', e);
       }
@@ -96,14 +95,11 @@ export function DashboardClient({ initialNodes, initialInsight, initialAiMetadat
   const fetchAI = useCallback(
     async (currentNodes = nodes, force = false) => {
       if (currentNodes.length === 0) return;
-
       setLoadingAI(true);
       try {
         const allCommits = currentNodes.flatMap((n) => n.recent_commits || []);
-        
-        // Alternate speaker
         const nextSpeaker = lastSpeakerRef.current === 'texas' ? 'gosta' : 'texas';
-        
+
         const res = await fetch('/api/insights', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -120,15 +116,11 @@ export function DashboardClient({ initialNodes, initialInsight, initialAiMetadat
         setInsight({ text: data.insight, speaker: nextSpeaker });
         lastSpeakerRef.current = nextSpeaker;
         localStorage.setItem('tt-pulse-guardian', nextSpeaker);
-
-        setAiMetadata({
-          fallback: data.fallback,
-          quotaExceeded: data.quotaExceeded,
-        });
+        setAiMetadata({ fallback: data.fallback, quotaExceeded: data.quotaExceeded });
       } catch {
         setInsight(prev => ({
           ...prev,
-          text: "My whiskers are tingling... something's not right with the studio data.",
+          text: "Signal lost. Can't reach the insight layer right now.",
         }));
       } finally {
         setLoadingAI(false);
@@ -152,18 +144,27 @@ export function DashboardClient({ initialNodes, initialInsight, initialAiMetadat
 
   const stats = useMemo(() => getStats(nodes), [nodes]);
 
-  // Manage Widget Order
+  // Derived state from actual node data (not text-matching)
+  const isDegraded = !!(aiMetadata.fallback || aiMetadata.quotaExceeded ||
+    nodes.some(n => !isNodeOnline(n.last_seen)));
+  const isHighLoad = nodes.some(n =>
+    n.cpu_usage > 75 || n.ram_usage > 80 || (n.cpu_temp ?? 0) > 80);
+
+  // Sidebar IDs (non-node widgets)
+  const sidebarBase = ['guardians', 'activity'];
+  const nodeIds = useMemo(() => nodes.map(n => `node-${n.node_name}`), [nodes]);
+
   const allWidgetIds = useMemo(() => {
-    const base = ['texas', 'commits', 'momentum', 'gosta'];
-    const nodeIds = nodes.map(n => `node-${n.node_name}`);
-    
     const combined = [...widgetOrder];
-    [...base, ...nodeIds].forEach(id => {
+    [...sidebarBase, ...nodeIds].forEach(id => {
       if (!combined.includes(id)) combined.push(id);
     });
-    
-    return combined.filter(id => base.includes(id) || nodeIds.includes(id));
+    return combined.filter(id => sidebarBase.includes(id) || nodeIds.includes(id));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes, widgetOrder]);
+
+  const sidebarIds = allWidgetIds.filter(id => sidebarBase.includes(id));
+  const sortedNodeIds = allWidgetIds.filter(id => id.startsWith('node-'));
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -178,150 +179,104 @@ export function DashboardClient({ initialNodes, initialInsight, initialAiMetadat
     }
   };
 
-  const isDegraded = aiMetadata.fallback || aiMetadata.quotaExceeded || !!(insight.text && (
-    insight.text.includes('Mrow?') || insight.text.includes('gap in the perimeter') || insight.text.includes('Hiss!')
-  ));
-  const isHighLoad = !!(insight.text && (insight.text.includes('Hiss!') || insight.text.includes('Grrr...')));
-
-  const renderWidget = (id: string) => {
-    if (id === 'texas' || id === 'gosta') {
+  const renderSidebarWidget = (id: string) => {
+    if (id === 'guardians') {
       return (
-        <SortableWidget id={id} key={id}>
-          <DraggableCat 
-            type={id as 'texas' | 'gosta'}
+        <SortableWidget id="guardians" key="guardians">
+          <GuardiansCard
             isDegraded={isDegraded}
             isHighLoad={isHighLoad}
             loading={loadingAI}
-            insight={insight.speaker === id ? insight.text : null}
+            insight={insight}
+            onRefresh={handleManualRefresh}
+            isRefreshing={isRefreshing || loadingAI}
           />
         </SortableWidget>
       );
     }
-    if (id === 'commits') {
+    if (id === 'activity') {
       return (
-        <SortableWidget id="commits" key="commits">
-          <div className="bg-white/5 border border-white/5 rounded-3xl p-6 relative overflow-hidden group shadow-[0_0_15px_rgba(139,92,246,0.05)] transition-all hover:shadow-[0_0_20px_rgba(139,92,246,0.1)] backdrop-blur-sm flex flex-col h-full min-h-[260px]">
-            <div className="relative z-10 space-y-4 mb-4">
-              <div className="flex items-center gap-3 text-slate-500 font-black uppercase tracking-[0.2em] text-[10px]">
-                <GitBranch className="w-4 h-4 text-nebula-accent" /> Daily Commits
+        <SortableWidget id="activity" key="activity">
+          <div className="bg-white/5 border border-white/5 rounded-3xl p-4 relative overflow-hidden group shadow-[0_0_15px_rgba(139,92,246,0.05)] transition-all hover:shadow-[0_0_20px_rgba(139,92,246,0.1)] backdrop-blur-sm flex flex-col h-full min-h-[220px]">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-3 shrink-0">
+              <div className="flex items-center gap-2 text-slate-500 font-black uppercase tracking-[0.2em] text-[9px]">
+                <Zap className="w-3 h-3 text-nebula-accent fill-nebula-accent/20" />
+                Activity
               </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-black text-white tracking-tighter font-mono">
-                  {stats.totalCommits}
-                </span>
-                <span className="text-nebula-accent font-bold text-xs italic uppercase tracking-widest">
-                  Logs
-                </span>
+              <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-[7px] font-black uppercase tracking-widest ${stats.totalCommits > 0 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-slate-500/10 border-slate-500/20 text-slate-500'}`}>
+                <TrendingUp className="w-2 h-2" />
+                {stats.totalCommits > 0 ? 'Trending Up' : 'Steady'}
               </div>
             </div>
-            
-            <div className="relative z-10 pt-4 border-t border-white/5 mt-auto space-y-4">
-              <div className="flex items-start justify-between gap-4">
-                <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 mt-1.5">Active</span>
-                <div className="flex flex-wrap gap-1.5 justify-end">
-                  {stats.activeBranches.slice(0, 3).map((branchInfo, idx) => {
+
+            {/* Primary metrics row */}
+            <div className="flex items-baseline gap-4 mb-3 shrink-0">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-3xl font-black text-white tracking-tighter font-mono">{stats.totalCommits}</span>
+                <div className="flex items-center gap-1">
+                  <GitBranch className="w-3 h-3 text-nebula-accent" />
+                  <span className="text-nebula-accent font-bold text-[9px] italic uppercase tracking-widest">Commits</span>
+                </div>
+              </div>
+              <div className="flex items-baseline gap-1 ml-auto">
+                <span className="text-xl font-black text-white tracking-tighter font-mono">{stats.efficiency}</span>
+                <span className="text-slate-500 font-bold text-[8px] uppercase tracking-widest">avg/station</span>
+              </div>
+            </div>
+
+            <div className="border-t border-white/5 pt-3 flex flex-col gap-3 flex-1 min-h-0 overflow-hidden">
+              {/* Top contributor */}
+              {stats.topContributor && (
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="relative w-6 h-6 rounded-full overflow-hidden border border-nebula-accent/50 bg-black/20 shadow-[0_0_8px_rgba(139,92,246,0.3)] shrink-0">
+                    <Image src={`https://github.com/${stats.topContributor}.png`} alt={stats.topContributor} fill sizes="24px" className="object-cover" />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[10px] font-black text-white uppercase italic tracking-tight leading-none truncate">{stats.topContributor}</span>
+                    <span className="text-[7px] font-bold text-nebula-accent uppercase tracking-widest mt-0.5">Top Contributor</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Commit distribution */}
+              {stats.commitDistribution.length > 0 && (
+                <div className="flex flex-col gap-1.5 shrink-0">
+                  {stats.commitDistribution.slice(0, 3).map((dist, idx) => (
+                    <div key={idx} className="flex items-center gap-1.5">
+                      <div className="w-1 h-1 rounded-full bg-nebula-accent shrink-0" />
+                      <span className="text-[9px] font-bold text-slate-400 truncate">{dist.name}:</span>
+                      <span className="text-[9px] font-black text-white font-mono ml-auto">{dist.commits}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Active branches */}
+              {stats.activeBranches.length > 0 && (
+                <div className="flex flex-wrap gap-1 shrink-0">
+                  {stats.activeBranches.slice(0, 2).map((branchInfo, idx) => {
                     const [displayPart, remoteUrl] = branchInfo.split('|');
                     return (
-                      <a key={idx} href={remoteUrl || '#'} target="_blank" rel="noopener noreferrer" className="px-2 py-0.5 rounded-md font-bold tracking-tight bg-nebula-accent/10 border border-nebula-accent/20 text-nebula-accent text-[8px] font-mono">
+                      <a key={idx} href={remoteUrl || '#'} target="_blank" rel="noopener noreferrer"
+                        className="px-1.5 py-0.5 rounded-md font-bold tracking-tight bg-nebula-accent/10 border border-nebula-accent/20 text-nebula-accent text-[7px] font-mono truncate max-w-[120px]">
                         {displayPart}
                       </a>
                     );
                   })}
                 </div>
-              </div>
+              )}
 
-              <div className="space-y-1">
-                <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">Latest Activity</span>
-                <p className={`text-[9px] font-medium leading-relaxed italic line-clamp-1 ${stats.latestCommit ? 'text-slate-300' : 'text-slate-600'}`}>
-                  {stats.latestCommit ? `"${stats.latestCommit}"` : 'No recent logs detected.'}
+              {/* Latest commit */}
+              {stats.latestCommit && (
+                <p className="text-[9px] font-medium leading-relaxed italic line-clamp-1 text-slate-400 border-t border-white/5 pt-2 shrink-0">
+                  &ldquo;{stats.latestCommit}&rdquo;
                 </p>
-              </div>
+              )}
             </div>
-            <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-nebula-accent/5 rounded-full blur-2xl group-hover:bg-nebula-accent/10 transition-colors" />
+
+            <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-nebula-accent/5 rounded-full blur-2xl group-hover:bg-nebula-accent/10 transition-colors pointer-events-none" />
           </div>
-        </SortableWidget>
-      );
-    }
-    if (id === 'momentum') {
-      return (
-        <SortableWidget id="momentum" key="momentum">
-          <div className="bg-white/5 border border-white/5 rounded-3xl p-6 relative overflow-hidden group shadow-[0_0_15px_rgba(139,92,246,0.05)] transition-all hover:shadow-[0_0_20px_rgba(139,92,246,0.1)] backdrop-blur-sm flex flex-col h-full min-h-[260px]">
-            <div className="relative z-10 space-y-4 mb-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3 text-slate-500 font-black uppercase tracking-[0.2em] text-[10px]">
-                  <Zap className="w-4 h-4 text-nebula-accent fill-nebula-accent/20" /> Dev Momentum
-                </div>
-                <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[7px] font-black uppercase tracking-widest ${stats.totalCommits > 0 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-slate-500/10 border-slate-500/20 text-slate-500'}`}>
-                   <TrendingUp className="w-2.5 h-2.5" />
-                   {stats.totalCommits > 0 ? 'Trending Up' : 'Steady'}
-                </div>
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-black text-white tracking-tighter font-mono">
-                  {stats.efficiency}
-                </span>
-                <span className="text-nebula-accent font-bold text-xs italic uppercase tracking-widest">
-                  avg/station
-                </span>
-              </div>
-            </div>
-
-            <div className="relative z-10 pt-4 border-t border-white/5 mt-auto flex flex-col gap-4">
-              <div className="space-y-3">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Top Contributor</span>
-                {stats.topContributor ? (
-                  <div className="flex items-center gap-3">
-                    <div className="relative w-8 h-8 rounded-full overflow-hidden border border-nebula-accent/50 bg-black/20 shadow-[0_0_10px_rgba(139,92,246,0.3)]">
-                      <Image src={`https://github.com/${stats.topContributor}.png`} alt={stats.topContributor} fill sizes="32px" className="object-cover" />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-xs font-black text-white uppercase italic tracking-tight leading-none">{stats.topContributor}</span>
-                      <span className="text-[8px] font-bold text-nebula-accent uppercase tracking-widest mt-0.5">Leading Sector</span>
-                    </div>
-                  </div>
-                ) : (
-                  <span className="text-[10px] font-bold text-slate-600">Awaiting active hunting...</span>
-                )}
-              </div>
-
-              <div className="pt-3 border-t border-white/5 flex flex-col gap-2">
-                {stats.commitDistribution.length > 0 ? (
-                  stats.commitDistribution.slice(0, 3).map((dist, idx) => (
-                    <div key={idx} className="flex items-center gap-1.5">
-                      <div className="w-1 h-1 rounded-full bg-nebula-accent" />
-                      <span className="text-[10px] font-bold text-slate-400">{dist.name}:</span>
-                      <span className="text-[10px] font-black text-white font-mono">{dist.commits}</span>
-                    </div>
-                  ))
-                ) : (
-                  <span className="text-[9px] font-bold text-slate-600 italic">Distribution pending...</span>
-                )}
-              </div>
-
-              <div className="pt-4 border-t border-white/5 flex items-center justify-between">
-                <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Momentum Trend</span>
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <div
-                      key={i}
-                      className={`w-1.5 h-3 rounded-sm transition-all ${i <= Math.ceil(parseInt(stats.efficiency) / 2) ? 'bg-nebula-accent shadow-[0_0_5px_rgba(139,92,246,0.5)]' : 'bg-white/5'}`}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-            
-            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-nebula-accent/5 rounded-full blur-2xl group-hover:bg-nebula-accent/10 transition-colors pointer-events-none" />
-          </div>
-        </SortableWidget>
-      );
-    }
-    const nodeName = id.replace('node-', '');
-    const node = nodes.find(n => n.node_name === nodeName);
-    if (node) {
-      return (
-        <SortableWidget id={id} key={id}>
-          <NodeCard node={node} />
         </SortableWidget>
       );
     }
@@ -329,70 +284,99 @@ export function DashboardClient({ initialNodes, initialInsight, initialAiMetadat
   };
 
   return (
-    <div className="min-h-screen bg-nebula-950 text-slate-200 font-sans flex flex-col relative overflow-x-hidden">
+    <div className="h-screen overflow-hidden bg-nebula-950 text-slate-200 font-sans flex flex-col relative">
       <AnimatePresence mode="wait">
         {initialLoading ? (
           <SystemBoot key="boot" onComplete={handleBootComplete} />
         ) : (
-          <motion.div 
+          <motion.div
             key="dashboard"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex flex-col min-h-screen relative"
+            className="flex flex-col h-full relative"
           >
             <div className="fixed inset-0 -z-20 nebula-gradient opacity-40" />
             <div className="fixed top-[-10%] left-[-10%] w-[60%] h-[60%] bg-nebula-accent/10 blur-[140px] rounded-full -z-20" />
-            
-            <div className="flex flex-col flex-grow relative z-10 w-full px-4 lg:px-8 xl:px-12">
-              <header className="py-8 flex justify-between items-center shrink-0">
-                <div className="flex items-center gap-3">
-                  <Image src="/pulse-icon.png" alt="Studio Icon" width={32} height={32} className="object-contain" />
-                  <h1 className="text-2xl font-black tracking-tight text-white uppercase italic">
-                    tt family&apos;s <span className="text-nebula-accent font-light">Dev Studio</span>
-                  </h1>
-                </div>
 
-                <div className="flex items-center gap-3">
-                  {statusError && (
-                    <div className="px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[9px] font-black uppercase tracking-widest animate-pulse">
-                      Connection error
-                    </div>
-                  )}
-                  <button
-                    onClick={handleManualRefresh}
-                    disabled={isRefreshing || loadingAI}
-                    className="p-2.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all active:scale-95 group disabled:opacity-50"
-                  >
-                    <RefreshCcw className={`w-4 h-4 text-slate-500 group-hover:text-nebula-accent ${isRefreshing || loadingAI ? 'animate-spin' : ''}`} />
-                  </button>
-                </div>
-              </header>
-
-              <main className="flex-grow pb-12 relative">
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                  <SortableContext
-                    items={allWidgetIds}
-                    strategy={rectSortingStrategy}
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 auto-rows-fr">
-                      {allWidgetIds.map(id => renderWidget(id))}
-                      
-                      {loading && nodes.length === 0 && (
-                        [1, 2, 3, 4].map(i => <NodeCardSkeleton key={`skeleton-${i}`} />)
-                      )}
-                    </div>
-                  </SortableContext>
-                </DndContext>
-              </main>
-
-              <div className="py-12 shrink-0 relative z-20 border-t border-white/5">
-                <Footer />
+            {/* Compact header */}
+            <header className="py-2 px-4 lg:px-6 flex justify-between items-center shrink-0 relative z-10 border-b border-white/5">
+              {/* Left: logo + title */}
+              <div className="flex items-center gap-2">
+                <Image src="/pulse-icon.png" alt="Studio Icon" width={24} height={24} className="object-contain" />
+                <h1 className="text-base font-black tracking-tight text-white uppercase italic">
+                  tt family&apos;s <span className="text-nebula-accent font-light">Dev Studio</span>
+                </h1>
               </div>
-            </div>
+
+              {/* Right: attribution + status */}
+              <div className="flex items-center gap-4">
+                {statusError && (
+                  <div className="px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[9px] font-black uppercase tracking-widest animate-pulse">
+                    Connection error
+                  </div>
+                )}
+
+                <div className="hidden md:flex items-center gap-4">
+                  <a href="https://github.com/thjox" target="_blank" rel="noopener noreferrer"
+                    className="group flex items-center gap-1.5 transition-all">
+                    <Terminal className="w-3 h-3 text-slate-600 group-hover:text-nebula-accent transition-colors" />
+                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-600 group-hover:text-slate-300">thjox</span>
+                  </a>
+                  <a href="https://github.com/tlxq" target="_blank" rel="noopener noreferrer"
+                    className="group flex items-center gap-1.5 transition-all">
+                    <Terminal className="w-3 h-3 text-slate-600 group-hover:text-nebula-accent transition-colors" />
+                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-600 group-hover:text-slate-300">tlxq</span>
+                  </a>
+                  <div className="h-3 w-px bg-white/10" />
+                  <a href="https://ttdevs.com" target="_blank" rel="noopener noreferrer"
+                    className="group flex items-center gap-1.5 px-2.5 py-1 bg-nebula-accent/5 border border-nebula-accent/10 rounded-lg hover:bg-nebula-accent/10 hover:border-nebula-accent/30 transition-all active:scale-95">
+                    <Globe className="w-3 h-3 text-nebula-accent" />
+                    <span className="text-[9px] font-black uppercase tracking-widest text-nebula-accent">ttdevs.com</span>
+                  </a>
+                  <div className="h-3 w-px bg-white/10" />
+                  <span className="text-[7px] font-black uppercase tracking-[0.3em] text-slate-700">v1.2</span>
+                </div>
+              </div>
+            </header>
+
+            {/* Main fullscreen area */}
+            <main className="flex-1 min-h-0 px-4 lg:px-5 xl:px-6 pt-4 pb-0 relative z-10">
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <div className="flex gap-4 h-full">
+                  {/* Left sidebar */}
+                  <div className="w-[288px] xl:w-[308px] shrink-0 flex flex-col gap-4 overflow-y-auto pb-4 px-0.5 pt-0.5">
+                    <SortableContext items={sidebarIds} strategy={rectSortingStrategy}>
+                      {sidebarIds.map(id => renderSidebarWidget(id))}
+                    </SortableContext>
+                  </div>
+
+                  {/* Node grid */}
+                  <div className="flex-1 min-w-0 overflow-y-auto pb-4 px-0.5 pt-0.5">
+                    <SortableContext items={sortedNodeIds} strategy={rectSortingStrategy}>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 auto-rows-fr h-full">
+                        {sortedNodeIds.map(id => {
+                          const nodeName = id.replace('node-', '');
+                          const node = nodes.find(n => n.node_name === nodeName);
+                          if (!node) return null;
+                          return (
+                            <SortableWidget id={id} key={id}>
+                              <NodeCard node={node} />
+                            </SortableWidget>
+                          );
+                        })}
+                        {loading && nodes.length === 0 && (
+                          [1, 2, 3, 4].map(i => <NodeCardSkeleton key={`skeleton-${i}`} />)
+                        )}
+                      </div>
+                    </SortableContext>
+                  </div>
+                </div>
+              </DndContext>
+            </main>
           </motion.div>
         )}
       </AnimatePresence>

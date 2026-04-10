@@ -104,7 +104,6 @@ export function DraggableCat({ type, isDegraded, isHighLoad, insight, loading }:
           {type === 'texas' ? (
             <BengalMascot
               mood={mood}
-              isDegraded={isDegraded}
               eyeOffset={eyeOffset}
               onClick={handleCatClick}
               className="w-40 h-40 md:w-48 md:h-48"
@@ -112,7 +111,6 @@ export function DraggableCat({ type, isDegraded, isHighLoad, insight, loading }:
           ) : (
             <DevonRexMascot
               mood={mood}
-              isDegraded={isDegraded}
               eyeOffset={eyeOffset}
               onClick={handleCatClick}
               className="w-40 h-40 md:w-48 md:h-48"

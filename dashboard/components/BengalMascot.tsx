@@ -5,15 +5,14 @@ import type { CatMood } from '@/types';
 
 interface BengalMascotProps {
   mood?: CatMood;
-  isDegraded?: boolean;
   eyeOffset?: { x: number; y: number };
   onClick?: () => void;
   className?: string;
 }
 
-export function BengalMascot({ mood = 'idle', isDegraded, eyeOffset, onClick, className }: BengalMascotProps) {
+export function BengalMascot({ mood = 'idle', eyeOffset, onClick, className }: BengalMascotProps) {
   const isAlert    = mood === 'alert';
-  const isTired    = mood === 'tired' || !!isDegraded;
+  const isTired    = mood === 'tired';
   const isYawn     = mood === 'yawn';
   const isStretch  = mood === 'stretch';
   const isStartled = mood === 'startled';
@@ -31,7 +30,7 @@ export function BengalMascot({ mood = 'idle', isDegraded, eyeOffset, onClick, cl
   const outline  = '#a89878';
   const noseRose = '#f9a8b8';
   const tongue   = '#f472b6';
-  const eyeColor = isDegraded ? '#8090a0' : '#1a7a50';
+  const eyeColor = '#1a7a50';
 
   // Cursor eye tracking — clamped to ±2.5 SVG units
   const ex = Math.max(-2.5, Math.min(2.5, eyeOffset?.x ?? 0));
@@ -42,7 +41,7 @@ export function BengalMascot({ mood = 'idle', isDegraded, eyeOffset, onClick, cl
 
   // Glow
   const glowPx  = isAlert ? '18px' : '10px';
-  const glowClr = isDegraded ? 'none' : isAlert ? 'rgba(239,68,68,0.35)' : 'rgba(16,185,129,0.22)';
+  const glowClr = isAlert ? 'rgba(239,68,68,0.35)' : 'rgba(16,185,129,0.22)';
 
   // Whole-SVG animation (startled / stretch live in the SVG <style> too)
   const svgAnim = isStartled
@@ -56,18 +55,16 @@ export function BengalMascot({ mood = 'idle', isDegraded, eyeOffset, onClick, cl
       className={`relative flex items-center justify-center ${className ?? 'w-40 h-40'} ${onClick ? 'cursor-pointer select-none' : ''}`}
       onClick={onClick}
     >
-      {!isDegraded && (
-        <div
-          className={`absolute inset-0 rounded-full border ${isAlert ? 'border-red-500/20' : 'border-emerald-500/15'}`}
-          style={{ animation: `ping ${isAlert ? '2s' : '5s'} ease-in-out infinite` }}
-        />
-      )}
+      <div
+        className={`absolute inset-0 rounded-full border ${isAlert ? 'border-red-500/20' : 'border-emerald-500/15'}`}
+        style={{ animation: `ping ${isAlert ? '2s' : '5s'} ease-in-out infinite` }}
+      />
 
       <svg
         viewBox="0 0 100 110"
-        className={`w-full h-full transition-all duration-700 ${isDegraded ? 'opacity-40 grayscale' : ''}`}
+        className="w-full h-full transition-all duration-700"
         style={{
-          filter: isDegraded ? undefined : `drop-shadow(0 0 ${glowPx} ${glowClr})`,
+          filter: `drop-shadow(0 0 ${glowPx} ${glowClr})`,
           animation: svgAnim,
         }}
       >
