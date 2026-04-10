@@ -25,13 +25,12 @@ export function DashboardClient({ initialNodes, initialInsight, initialAiMetadat
   const [aiMetadata, setAiMetadata] = useState<AiMetadata>(initialAiMetadata || {});
 
   useEffect(() => {
-    // If we have initial data, we can potentially skip the boot animation 
-    // or handle it differently. For now, keep it for the vibe but allow skipping.
+    // Only fetch if we don't have an insight and we have nodes
     const hasBooted = sessionStorage.getItem('tt_pulse_booted');
-    if (hasBooted || initialNodes.length > 0) {
+    if (hasBooted) {
       setInitialLoading(false);
     }
-  }, [initialNodes.length]);
+  }, []);
 
   const handleBootComplete = () => {
     sessionStorage.setItem('tt_pulse_booted', 'true');
