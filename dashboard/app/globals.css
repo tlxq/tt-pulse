@@ -31,6 +31,39 @@
   50% { opacity: 0.4; filter: blur(100px); }
 }
 
+@keyframes catStartle {
+  0%   { transform: scale(1)    rotate(0deg);  }
+  20%  { transform: scale(1.14) rotate(-4deg); }
+  45%  { transform: scale(0.93) rotate(3deg);  }
+  70%  { transform: scale(1.06) rotate(-1deg); }
+  100% { transform: scale(1)    rotate(0deg);  }
+}
+
+@keyframes catStretch {
+  0%, 100% { transform: scaleY(1)    translateY(0);    }
+  40%       { transform: scaleY(1.08) translateY(-3px); }
+  60%       { transform: scaleY(1.06) translateY(-2px); }
+}
+
+@keyframes particleFloat {
+  0%   { transform: translateY(0)     scale(1);   opacity: 0;   }
+  12%  { opacity: 0.85; }
+  80%  { opacity: 0.45; }
+  100% { transform: translateY(-52px) scale(0.2); opacity: 0;   }
+}
+
+@keyframes mrrpPop {
+  0%   { transform: scale(0.4)  translateY(10px); opacity: 0; }
+  25%  { transform: scale(1.12) translateY(-5px); opacity: 1; }
+  72%  { transform: scale(1)    translateY(0);    opacity: 1; }
+  100% { transform: scale(0.75) translateY(-8px); opacity: 0; }
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
 :root {
   --background: var(--color-nebula-950);
   --foreground: #f8fafc;

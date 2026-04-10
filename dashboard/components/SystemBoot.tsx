@@ -88,12 +88,12 @@ export function SystemBoot({ onComplete }: { onComplete: () => void }) {
         />
 
         <div className="flex flex-col items-center gap-1 relative z-10">
-          <BengalMascot isHighLoad={progress < 90} />
+          <BengalMascot mood={progress < 90 ? 'alert' : 'happy'} />
           <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Texas</span>
         </div>
 
         <div className="flex flex-col items-center gap-1 relative z-10">
-          <DevonRexMascot isHighLoad={progress < 70} />
+          <DevonRexMascot mood={progress < 70 ? 'alert' : 'happy'} />
           <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Gösta</span>
         </div>
       </div>

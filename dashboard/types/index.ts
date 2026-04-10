@@ -52,3 +52,5 @@ export interface AiMetadata {
   fallback?: boolean;
   quotaExceeded?: boolean;
 }
+
+export type CatMood = 'idle' | 'alert' | 'happy' | 'tired' | 'yawn' | 'paw' | 'stretch' | 'startled';
