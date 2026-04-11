@@ -284,7 +284,7 @@ export function DashboardClient({ initialNodes, initialInsight, initialAiMetadat
   };
 
   return (
-    <div className="h-screen overflow-hidden bg-nebula-950 text-slate-200 font-sans flex flex-col relative">
+    <div className="lg:h-screen lg:overflow-hidden bg-nebula-950 text-slate-200 font-sans flex flex-col relative">
       <AnimatePresence mode="wait">
         {initialLoading ? (
           <SystemBoot key="boot" onComplete={handleBootComplete} />
@@ -293,7 +293,7 @@ export function DashboardClient({ initialNodes, initialInsight, initialAiMetadat
             key="dashboard"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex flex-col h-full relative"
+            className="flex flex-col lg:h-full relative"
           >
             <div className="fixed inset-0 -z-20 nebula-gradient opacity-40" />
             <div className="fixed top-[-10%] left-[-10%] w-[60%] h-[60%] bg-nebula-accent/10 blur-[140px] rounded-full -z-20" />
@@ -309,12 +309,19 @@ export function DashboardClient({ initialNodes, initialInsight, initialAiMetadat
               </div>
 
               {/* Right: attribution + status */}
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 md:gap-4">
                 {statusError && (
                   <div className="px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[9px] font-black uppercase tracking-widest animate-pulse">
                     Connection error
                   </div>
                 )}
+
+                {/* Mobile: only show ttdevs link */}
+                <a href="https://ttdevs.com" target="_blank" rel="noopener noreferrer"
+                  className="md:hidden group flex items-center gap-1.5 px-2.5 py-1 bg-nebula-accent/5 border border-nebula-accent/10 rounded-lg hover:bg-nebula-accent/10 transition-all active:scale-95">
+                  <Globe className="w-3 h-3 text-nebula-accent" />
+                  <span className="text-[9px] font-black uppercase tracking-widest text-nebula-accent">ttdevs.com</span>
+                </a>
 
                 <div className="hidden md:flex items-center gap-4">
                   <a href="https://github.com/thjox" target="_blank" rel="noopener noreferrer"
@@ -340,24 +347,24 @@ export function DashboardClient({ initialNodes, initialInsight, initialAiMetadat
             </header>
 
             {/* Main fullscreen area */}
-            <main className="flex-1 min-h-0 px-4 lg:px-5 xl:px-6 pt-4 pb-0 relative z-10">
+            <main className="flex-1 lg:min-h-0 px-4 lg:px-5 xl:px-6 pt-4 pb-4 lg:pb-0 relative z-10">
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
                 onDragEnd={handleDragEnd}
               >
-                <div className="flex gap-4 h-full">
+                <div className="flex flex-col lg:flex-row gap-4 lg:h-full">
                   {/* Left sidebar */}
-                  <div className="w-[288px] xl:w-[308px] shrink-0 flex flex-col gap-4 overflow-y-auto pb-4 px-0.5 pt-0.5">
+                  <div className="w-full lg:w-[288px] xl:w-[308px] shrink-0 flex flex-col sm:flex-row lg:flex-col gap-4 lg:overflow-y-auto px-0.5 pt-0.5 pb-0 lg:pb-4">
                     <SortableContext items={sidebarIds} strategy={rectSortingStrategy}>
                       {sidebarIds.map(id => renderSidebarWidget(id))}
                     </SortableContext>
                   </div>
 
                   {/* Node grid */}
-                  <div className="flex-1 min-w-0 overflow-y-auto pb-4 px-0.5 pt-0.5">
+                  <div className="flex-1 min-w-0 lg:overflow-y-auto pb-4 px-0.5 pt-0.5">
                     <SortableContext items={sortedNodeIds} strategy={rectSortingStrategy}>
-                      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 auto-rows-fr h-full">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 auto-rows-fr lg:h-full">
                         {sortedNodeIds.map(id => {
                           const nodeName = id.replace('node-', '');
                           const node = nodes.find(n => n.node_name === nodeName);
